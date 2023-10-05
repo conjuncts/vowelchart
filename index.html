@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <title>vowelchart</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- <a href="https://vitejs.dev" target="_blank">
+      </a>
+      <a href="https://www.typescriptlang.org/" target="_blank">
+      </a> -->
+      <h1>Vowelchart</h1>
+      <!-- <div class="card">
+        <button id="counter" type="button"></button>
+      </div> -->
+      <p class="info">Click a point to play its sound.</p>
+      <div id="my_dataviz"></div>
+
+      <p class="info">
+        Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>!<br>
+        <u>F1 and F2 values are approximate and may not be accurate.</u> <br>
+        They come mostly from <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
+        a few values determined using Praat. <br>The recordings are by <a href="https://en.wikipedia.org/wiki/File:Close_front_unrounded_vowel.ogg">User:Denelson83</a>
+      </p>
+    </div>
+    <script src="https://d3js.org/d3.v6.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
