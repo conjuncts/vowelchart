@@ -103,6 +103,6 @@ button:focus-visible {
   
 } */
 .info {
-  max-width: 80%;
+  /* max-width: 80%; */
   align-self: center;
 }
