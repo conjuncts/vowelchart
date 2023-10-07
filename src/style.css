@@ -26,7 +26,7 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  /* place-items: center; */
   min-width: 320px;
   min-height: 100vh;
 }
@@ -38,13 +38,25 @@ h1 {
 }
 
 #app {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+#main {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0 2rem;
   text-align: center;
   display: flex;
   flex-direction: column;
 }
+
+@media screen and (max-width: 600px) {
+  #main {
+    padding: 1rem;
+  }
+}
+
 
 .logo {
   height: 6em;
@@ -98,11 +110,64 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
 /* #my_dataviz>svg {
   overflow: visible;
-  
 } */
+
 .info {
-  /* max-width: 80%; */
   align-self: center;
+}
+
+nav ul {
+  list-style-type: none;
+  margin: 0 auto 0 auto;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: stretch;
+  /* height: 2em; */
+  /* gap: 1em; */
+}
+
+nav ul li:first-of-type {
+  margin-right: auto;
+}
+nav ul li:first-of-type h2, nav ul li:last-of-type h2 {
+  margin: 0.3em 0 0.3em 0;
+}
+nav ul li:last-of-type {
+  margin-left: auto;
+  visibility: hidden;
+}
+.tablink {
+  cursor: pointer;
+  /* align-self: center; */
+  /* height: 100%; */
+  display: flex;
+  padding-left: 1em;
+  padding-right: 1em;
+  /* justify-content: center; */
+  align-items: center;
+}
+.tablink:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tablink.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+
+
+#tab-gen {
+  display: o
 }

@@ -9,23 +9,40 @@
   </head>
   <body>
     <div id="app">
-      <!-- <a href="https://vitejs.dev" target="_blank">
-      </a>
-      <a href="https://www.typescriptlang.org/" target="_blank">
-      </a> -->
-      <h1>Vowelchart</h1>
-      <!-- <div class="card">
-        <button id="counter" type="button"></button>
-      </div> -->
-      <p class="info">Click a point to play its sound.</p>
-      <div id="my_dataviz"></div>
+      <nav id="tabs">
+        <ul>
+          <li><h2>Vowelchart</h2></li>
+          <li class="tablink active" onclick="changeTab(event, 'tab-home')" >Home</li>
+          <li class="tablink" onclick="changeTab(event, 'tab-diph')">Diphthongs</li>
+          <li class="tablink" onclick="changeTab(event, 'tab-gvs')">Great Vowel Shift</li>
 
-      <p class="info">
-        Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>!<br>
-        <u>F1 and F2 values are approximate and may not be accurate.</u> <br>
-        They come mostly from <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
-        a few values determined using Praat. <br>The recordings are by <a href="https://en.wikipedia.org/wiki/File:Close_front_unrounded_vowel.ogg">User:Denelson83</a>
-      </p>
+          <li>
+            <h2>Vowelchart</h2>
+          </li>
+        </ul>
+      </nav>
+      <div id="main">
+      
+      <!-- <div class="card">-->
+
+
+        <p class="info">Click a point to play its sound.</p>
+        <div id="vowelchart"></div>
+
+        <p class="info">
+          Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>!<br>
+          <b>F1 and F2 values are approximate.</b> <br>
+          Values are mostly <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
+          the rest measured with <a href="https://pypi.org/project/praat-parselmouth/">Praat</a>. <br>
+          The <a href="https://en.wikipedia.org/wiki/IPA_vowel_chart_with_audio">recordings</a> are by 
+          User:Denelson83 and User:RoachPeter, among others. <br>
+          Thanks to <a href="https://github.com/tmhglnd/vowel-formants-graph">Timo Hoogland</a> for 
+          his code on <i>de novo</i> vowel synthesis.
+        </p>
+        <!-- <button id="reset" type="button" onclick="oscillator">Reset</button> -->
+
+
+      </div>
     </div>
     <script src="https://d3js.org/d3.v6.js"></script>
     <script type="module" src="/src/main.ts"></script>
