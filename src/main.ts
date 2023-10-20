@@ -82,11 +82,8 @@ svg.append("rect")
     if (e.buttons === 1) {
       changeVowel({F1: f1, F2: f2});
     }
-  })
-  .on("mouseup", function () {
-    // console.log("mouseup!");
-    stopVowel();
   });
+
 
 
 export function changeTab(event: MouseEvent, tabName: string) {
@@ -105,6 +102,8 @@ d3.tsv("formants.tsv").then(function (data) {
     let process = d;
     process["F1"] = +d["F1"];
     process["F2"] = +d["F2"];
+    process["F3"] = +d["F3"];
+    
     formantData[d.Symbol] = process;
   });
   console.log(data);
@@ -187,4 +186,9 @@ d3.tsv("formants.tsv").then(function (data) {
 
   // oscillator.start();
 
+});
+
+// on mouseup, stop all vowels
+document.addEventListener("mouseup", function () {
+  stopVowel();
 });
