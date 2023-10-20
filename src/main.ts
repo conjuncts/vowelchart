@@ -4,7 +4,7 @@
 // import { setupCounter } from './counter.ts';
 
 import * as d3 from 'd3';
-import { changeVowel, startVowel, stopVowel } from './synthesis';
+import { DiphthongScheduler, changeVowel, formants, startVowel, stopVowel } from './synthesis';
 
 // setupCounter(document.querySelector<HTMLButtonElement>('#counter')!);
 
@@ -98,9 +98,16 @@ export function changeTab(event: MouseEvent, tabName: string) {
 }
 (window as any).changeTab = changeTab;
 //Read the data
-d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2e40f4/raw/b34290f31929ef77fd039e524c27a472c61b069c/vowelchart.tsv").then(function (data) {
-
-
+// d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2e40f4/raw/b34290f31929ef77fd039e524c27a472c61b069c/vowelchart.tsv").then(function (data) {
+let formantData: Record<string, Vowel> = {};
+d3.tsv("formants.tsv").then(function (data) {
+  data.forEach((d: any) => {
+    let process = d;
+    process["F1"] = +d["F1"];
+    process["F2"] = +d["F2"];
+    formantData[d.Symbol] = process;
+  });
+  console.log(data);
   let gs = svg.append('g')
     .selectAll("text")
     .data(data)
@@ -142,10 +149,11 @@ d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2
 
   // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u
   // to signify the frontier
-  let vowels = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
-  let vowelsData = data.filter(d => vowels.includes(d.Symbol));
-  let vowelsDataSorted = vowelsData.sort((a, b) => vowels.indexOf(a.Symbol) - vowels.indexOf(b.Symbol));
-  let vertices = vowelsDataSorted.map(d => [x(d.F2 as any), y(d.F1 as any)]);
+  let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
+  // let frontierData = data.filter(d => frontier.includes(d.Symbol));
+  // let vowelsDataSorted = frontierData.sort((a, b) => frontier.indexOf(a.Symbol) - frontier.indexOf(b.Symbol));
+  // let vertices = vowelsDataSorted.map(d => [x(d.F2 as any), y(d.F1 as any)]);
+  let vertices = frontier.map(d => [x(formantData[d].F2 as any), y(formantData[d].F1 as any)]);
   console.log(vertices);
 
   const curve = d3.line().curve(d3.curveMonotoneX);
@@ -160,6 +168,21 @@ d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2
     .style("pointer-events", "none")
     .style("z-index", "-99");
 
+  // add test vowel diphthong eɪ
+  let diph = ["a", "ɪ"].map(s => formantData[s]);
+  let player = new DiphthongScheduler(diph[0], diph[1]);
+
+  // add test button
+  svg.append("rect")
+    .attr("x", 0)
+    .attr("y", height + 10)
+    .attr("width", 100)
+    .attr("height", 20)
+    .style("fill", "red")
+    .style("cursor", "pointer")
+    .on("click", function () {
+      player.play();
+    });
 
 
   // oscillator.start();
