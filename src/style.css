@@ -172,7 +172,7 @@ nav ul li:last-of-type {
 :root {
   --primary-color: #185ee0;
   --secondary-color: #e6eef9;
-  --tab-width: 180px;
+  --tab-width: 160px;
 }
 
 *,

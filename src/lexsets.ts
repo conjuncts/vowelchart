@@ -71,3 +71,12 @@ const lexicalSets: LexicalSet[] = [
 ];
 
 export default lexicalSets;
+
+
+export let diphs = `e ɪ
+a ɪ
+ɔ ɪ
+a ʊ
+o ʊ̞`.split("\n").map((x) => x.split(' '));
+
+// ʊ

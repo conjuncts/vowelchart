@@ -20,11 +20,11 @@
             <input type="radio" id="radio-1" name="tabs" checked />
             <label class="tab" for="radio-1">Home</label>
             <input type="radio" id="radio-2" name="tabs" />
-            <label class="tab" for="radio-2">Diphthongs</label>
+            <label class="tab" for="radio-2">Lexical Sets</label>
             <input type="radio" id="radio-3" name="tabs" />
-            <label class="tab" for="radio-3">Lexical Sets</label>
+            <label class="tab" for="radio-3">Great Vowel Shift</label>
             <input type="radio" id="radio-4" name="tabs" />
-            <label class="tab" for="radio-4">Great Vowel Shift</label>
+            <label class="tab" for="radio-4">Mergers</label>
             <span class="glider"></span>
           </li>   
           <li><h2>Vowelchart</h2></li>
@@ -50,16 +50,26 @@
         <p class="info">Click a point to play its sound.</p>
         <div id="vowelchart"></div>
 
-        <p class="info">
+        <p>
+          <input type="checkbox" id="play-reference" checked onchange="
+                                    toggleReferenceRecordings();">
+          Enable reference recordings<br>
+          <input type="checkbox" id="toggle-diphs" onchange="
+                                    toggleDiphthongs();">
+          Enable diphthongs<br>
+        </p>
+        <small class="info">
+
+                          <!-- <hr> -->
           Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>! 
           <b>F1 and F2 values are approximate.</b> <br>
-          Values are mostly <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
-          the rest measured with <a href="https://pypi.org/project/praat-parselmouth/">Praat</a>. <br>
+          Values from <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
+          a minority measured with <a href="https://pypi.org/project/praat-parselmouth/">Praat</a>. <br>
           <a href="https://en.wikipedia.org/wiki/IPA_vowel_chart_with_audio">Recordings</a> are by 
-          User:Denelson83 and User:RoachPeter, among others. <br>
+          User:Denelson83 and User:RoachPeter et al. <br>
           Thanks to <a href="https://github.com/tmhglnd/vowel-formants-graph">Timo Hoogland</a> for 
-          his code on vowel synthesis from scratch.
-        </p>
+          his work on vowel synthesis.
+        </small>
         <!-- <button id="reset" type="button" onclick="oscillator">Reset</button> -->
 
 

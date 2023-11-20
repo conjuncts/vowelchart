@@ -4,7 +4,11 @@
 // import { setupCounter } from './counter.ts';
 
 import * as d3 from 'd3';
-import { DiphthongScheduler, changeVowel, formants, startVowel, stopVowel } from './synthesis';
+import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
+import {toggleReferenceRecordings, toggleDiphthongs} from './tabs';
+import {diphs} from './lexsets';
+(window as any).toggleReferenceRecordings = toggleReferenceRecordings;
+(window as any).toggleDiphthongs = toggleDiphthongs;
 
 // setupCounter(document.querySelector<HTMLButtonElement>('#counter')!);
 
@@ -15,6 +19,8 @@ type Vowel = {
   F2: number;
   F3: number;
 }
+
+export let enableReferenceVowels = true;
 
 // set the dimensions and margins of the graph
 const margin = { top: 10, right: 30, bottom: 30, left: 60 },
@@ -66,16 +72,15 @@ svg.append("rect")
   .attr("width", width - rightOffset)
   .attr("height", height)
   .style("fill", "transparent")
+  .style("z-index", "1")
   // .style("cursor", "pointer")
   .on("mousedown", function (e) {
-    // console.log("clicked!");
     let f1 = y.invert(d3.pointer(e)[1]);
     let f2 = x.invert(d3.pointer(e)[0]);
-    console.log(f1, f2);
+    // console.log(f1, f2);
     startVowel({F1: f1, F2: f2});
   })
   .on("mousemove", function (e) {
-    // console.log("mousemove!");
     let f1 = y.invert(d3.pointer(e)[1]);
     let f2 = x.invert(d3.pointer(e)[0]);
     // console.log(f1, f2);
@@ -85,15 +90,6 @@ svg.append("rect")
   });
 
 
-
-export function changeTab(event: MouseEvent, tabName: string) {
-  for(let x of document.getElementsByClassName("tablink active")) {
-    x.classList.remove("active");
-  }
-  (event.currentTarget as Element).className += " active";
-  console.log(tabName);
-}
-(window as any).changeTab = changeTab;
 //Read the data
 // d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2e40f4/raw/b34290f31929ef77fd039e524c27a472c61b069c/vowelchart.tsv").then(function (data) {
 let formantData: Record<string, Vowel> = {};
@@ -117,43 +113,47 @@ d3.tsv("formants.tsv").then(function (data) {
     .attr("x", d => x(d.F2 as any) + 5) // Adjust the position as needed
     .attr("y", d => y(d.F1 as any) - 5) // Adjust the position as needed
     .style("user-select", "none")
+    .style("pointer-events", "none")
     .text(d => { return d.Symbol }); // Text content
 
   // .data(data)
   // .enter()
+
+  // plot circles
   gs.append("circle")
     .attr("cx", function (d) { return x(d.F2 as any); })
     .attr("cy", function (d) { return y(d.F1 as any); })
     .attr("r", 5)
-    .style("fill", "#69b3a2");
-    // .attr("alt", d => d.Filename);
+    .style("pointer-events", "none")
+    .style("fill", "#69b3a2")
+    .attr("alt", d => d.Filename);
 
-  gs.append("circle") // bounding circle
+  let circles = gs.append("circle") // bounding circle
+    .classed("refs-bounds", true)
     .attr("cx", function (d) { return x(d.F2 as any); })
     .attr("cy", function (d) { return y(d.F1 as any); })
-    .attr("r", 10)
+    .attr("r", 8)
     .style("fill", "transparent")
-    .style("cursor", "pointer")
+    .style("cursor", d => d.Symbol === "ʊ̞" ? "help" : "pointer")
+    .style("z-index", "99")
     .on("click", function () {
+      // console.log("bound click");
       var d = d3.select(this).datum() as Vowel;
       var audio = new Audio("./vowels/" + d.Filename);
-      audio.play();
-      console.log("playing " + d.Filename);
+      if(enableReferenceVowels) {
+        audio.play();
+        // console.log("playing " + d.Filename);
+      }
       // stop propagation
     })
     .on("mouseup", function () {
       // console.log("mouseup!");
       stopVowel();
-    });;
+    });
 
-  // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u
-  // to signify the frontier
+  // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
   let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
-  // let frontierData = data.filter(d => frontier.includes(d.Symbol));
-  // let vowelsDataSorted = frontierData.sort((a, b) => frontier.indexOf(a.Symbol) - frontier.indexOf(b.Symbol));
-  // let vertices = vowelsDataSorted.map(d => [x(d.F2 as any), y(d.F1 as any)]);
   let vertices = frontier.map(d => [x(formantData[d].F2 as any), y(formantData[d].F1 as any)]);
-  console.log(vertices);
 
   const curve = d3.line().curve(d3.curveMonotoneX);
 
@@ -168,21 +168,49 @@ d3.tsv("formants.tsv").then(function (data) {
     .style("z-index", "-99");
 
   // add test vowel diphthong eɪ
-  let diph = ["a", "ɪ"].map(s => formantData[s]);
-  let player = new DiphthongScheduler(diph[0], diph[1]);
+  for(let diphstr of diphs) {
+    // let diph = ["a", "ɪ"].map(s => formantData[s]);
+    let diph = diphstr.map(s => formantData[s]);
 
-  // add test button
-  svg.append("rect")
-    .attr("x", 0)
-    .attr("y", height + 10)
-    .attr("width", 100)
-    .attr("height", 20)
-    .style("fill", "red")
-    .style("cursor", "pointer")
-    .on("click", function () {
-      player.play();
-    });
+    let player = new DiphthongScheduler(diph[0], diph[1]);
 
+
+    svg.append("path")
+      .attr("d", curve([[x(diph[0].F2 as any), y(diph[0].F1 as any)], [x(diph[1].F2 as any), y(diph[1].F1 as any)]]))
+      .classed("diphs-bounds", true)
+      .attr('stroke', 'blue')
+      .attr('fill', 'none')
+      .style("display", "none")
+      .style("pointer-events", "none")
+      .style("z-index", "-99");
+    
+    svg.append("path")
+      .attr("d", curve([[x(diph[0].F2 as any), y(diph[0].F1 as any)], [x(diph[1].F2 as any), y(diph[1].F1 as any)]]))
+      .classed("diphs-bounds", true)
+      .style("display", "none")
+      
+      // set width to be larger
+      .attr('stroke-opacity', 0)
+      .attr('stroke', 'blue')
+      .attr('stroke-width', 10)
+      .style("cursor", "pointer")
+      .on("click", function () {
+        player.play();
+      });
+
+
+    // add test button
+    // svg.append("rect")
+    //   .attr("x", 0)
+    //   .attr("y", height + 10)
+    //   .attr("width", 100)
+    //   .attr("height", 20)
+    //   .style("fill", "red")
+    //   .style("cursor", "pointer")
+    //   .on("click", function () {
+    //     player.play();
+    //   });
+  }
 
   // oscillator.start();
 

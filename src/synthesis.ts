@@ -30,7 +30,7 @@ export class Formant {
     constructor(relativeVolume: number = 1) {
         const oscillator = audioCtx.createOscillator();
         this.oscillator = oscillator;
-        oscillator.type = "square";
+        oscillator.type = "sawtooth";
         oscillator.frequency.setValueAtTime(87, audioCtx.currentTime);
         const filter = audioCtx.createBiquadFilter();
         this.filter = filter;
@@ -50,13 +50,9 @@ export class Formant {
         (window as any).oscillator = oscillator;
     }
     init() {
-        // if (!this._init) {
         this.oscillator.start();
-        //     this._init = true;
-        // }
     }
     start() {
-        // console.log("starting oscillator "+ this.relativeVolume);
         this._on = true;
         this.gainNode.gain.setTargetAtTime(
             this.baseVolume * this.relativeVolume, audioCtx.currentTime, 0.03);
@@ -93,9 +89,6 @@ export function startVowel(vowel: Vowel) {
     }
     init();
     formants.forEach(f => f.start());
-    // setTimeout(() => {
-    //   formants.forEach(f => f.stop());
-    // }, 1500);
 }
 export function changeVowel(vowel: Vowel) {
     const f1 = vowel.F1;
@@ -144,10 +137,6 @@ export class DiphthongScheduler extends VowelScheduler {
     endV: Vowel;
     duration=0.6;
     holdDuration=0.15;
-    // steps=10;
-    // f1step: number;
-    // f2step: number;
-    // f3step?: number;
     /**
      * 
      * @param startVowel 
@@ -181,15 +170,6 @@ export class DiphthongScheduler extends VowelScheduler {
         let duration = this.duration;
         formants[0].filter.frequency.setTargetAtTime(f1, audioCtx.currentTime, 0.015);
         formants[1].filter.frequency.setTargetAtTime(f2, audioCtx.currentTime, 0.015);
-        // for(let i = 0; i < this.steps; i++) {
-        //     // linear interpolation
-        //     console.log(i * duration / this.steps);
-        //     formants[0].schedule(f1 + i * this.f1step, i * duration / this.steps);
-        //     formants[1].schedule(f2 + i * this.f2step, i * duration / this.steps);
-        //     if(this.f3step) {
-        //         formants[2].schedule(this.startV.F3! + i * this.f3step, i * duration / this.steps);
-        //     }
-        // }
         // linear ramp
         // formants[0].filter.frequency.linearRampToValueAtTime(this.endV.F1, audioCtx.currentTime + duration);
         // formants[1].filter.frequency.linearRampToValueAtTime(this.endV.F2, audioCtx.currentTime + duration);
@@ -245,7 +225,7 @@ function logisticsInterpSteps(start: number, end: number, steps: number) : Float
 }
 const logisticsValues20 = logisticsInterpSteps(0, 1, 23).slice(2, 22);
 
-export function schedule(start: Vowel, end?: Vowel): VowelScheduler {
+export function scheduler(start: Vowel, end?: Vowel): VowelScheduler {
     if(end) {
         return new DiphthongScheduler(start, end);
     }

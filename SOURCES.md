@@ -20,3 +20,11 @@ https://www.soundbridge.io/formants-vowel-sounds
 
 SYNTHESIS:
 https://alemangui.github.io/ramp-to-value
+
+The placement of the /ʊ/ is a bit controversial. The current location is the one determined by
+Praat from the reference recording, which is also approximately the same vowel as in the 
+American "foot" pronunciation, which is usually transcribed as ʊ (the value given by Wells to the
+FOOT lexical set). However, the RP pronunciation is audibly different and seems to be producible
+with a lower F1 score of around 300. This is about where Catford 1988 places it. This also is the
+only explanation for oʊ diphthongs, which qualitatively require a decrease in F1, and only makes
+sense if ʊ has the lower F1 value. 
