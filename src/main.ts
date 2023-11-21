@@ -142,7 +142,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("alt", d => d.Filename);
 
     // bounding circles
-    let circles = gs.append("circle") 
+    gs.append("circle") 
         .classed("refs-bounds", true)
         .attr("cx", function (d) { return x(d.F2 as any); })
         .attr("cy", function (d) { return y(d.F1 as any); })
