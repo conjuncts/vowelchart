@@ -1,3 +1,4 @@
+import { onLexsetToggle } from "./lexsets";
 
 export function toggleReferenceRecordings(enable?: boolean) {
     if(enable === undefined) {
@@ -8,10 +9,8 @@ export function toggleReferenceRecordings(enable?: boolean) {
     for(let ref of referenceRecordings) {
         if(enable) {
             ref.style.removeProperty("display");
-            // ref.style.zIndex = "0";
         } else {
             ref.style.display = "none";
-            // ref.style.zIndex = "-90";
 
         }
     }
@@ -45,8 +44,10 @@ export function toggleLexsets(enable?: boolean) {
     for (let bound of bounds) {
         if (enable) {
             bound.style.display = "block";
+            onLexsetToggle(true);
         } else {
-            bound.style.display = "none";
+            // bound.style.display = "none";
+            onLexsetToggle(false);
         }
     }
 }

@@ -114,7 +114,8 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
+    color: #0f0f0f;
+    /* color: #213547; */
     background-color: #ffffff;
   }
   a:hover {
@@ -134,6 +135,7 @@ button:focus-visible {
 }
 
 /*Start navbar*/
+
 nav ul {
   list-style-type: none;
   margin: 0 auto 0 auto;
@@ -189,8 +191,10 @@ nav ul li:last-of-type {
 /* @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"); */
 
 :root {
-  --primary-color: #185ee0;
-  --secondary-color: #e6eef9;
+  /* --primary-color: #185ee0; */
+  --primary-color: #0f0f0f;
+  /* --secondary-color: #e6eef9; */
+  --secondary-color: #69b3a222;
   --tab-width: 160px;
 }
 
@@ -249,6 +253,7 @@ input[type=radio] {
 
 input[type=radio]:checked+label {
   color: var(--primary-color);
+  font-weight: 600;
   cursor: default;
 }
 
@@ -291,4 +296,5 @@ input[id=radio-4]:checked~.glider {
 
 .lexset {
   display: none;
+  font-variant: all-small-caps;
 }
