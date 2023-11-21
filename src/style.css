@@ -43,12 +43,26 @@ h1 {
   flex: 1;
 }
 #main {
+  align-self: center;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 2rem;
-  text-align: center;
+  /* padding: 0 2rem; */
+  /* text-align: center; */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1em;
+}
+#vowelchart {
+  flex: 1;
+  padding: 2em 0 0 0;
+  border: 1px solid #ccc;
+}
+.sidebar-right, .sidebar-left {
+  flex: 1;
+}
+.sidebar-right {
+  width: 30em;
 }
 
 @media screen and (max-width: 600px) {
@@ -123,9 +137,10 @@ button:focus-visible {
 nav ul {
   list-style-type: none;
   margin: 0 auto 0 auto;
-  border-bottom: 1px solid #eee;
+  /* border-bottom: 1px solid #eee; */
   display: flex;
   align-items: stretch;
+  padding-left: 0;
   /* height: 2em; */
   /* gap: 1em; */
 }
@@ -134,7 +149,11 @@ nav ul li:first-of-type {
   margin-right: auto;
 }
 nav ul li:first-of-type h2, nav ul li:last-of-type h2 {
-  margin: 0.3em 0 0.3em 0;
+  margin: 0.3em 0 0.3em 2em;
+  color: #0f0f0f;
+  /* font-size: 1.5em; */
+  font-variant: small-caps;
+  font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 }
 nav ul li:last-of-type {
   margin-left: auto;
@@ -230,6 +249,7 @@ input[type=radio] {
 
 input[type=radio]:checked+label {
   color: var(--primary-color);
+  cursor: default;
 }
 
 input[type=radio]:checked+label>.notification {
@@ -260,11 +280,15 @@ input[id=radio-4]:checked~.glider {
   background-color: var(--secondary-color);
   z-index: 1;
   /* border-radius: 99px; */
-  transition: 0.2s ease-out;
+  transition: 0.15s ease-out;
 }
 
 @media (max-width: 700px) {
   .tabs {
     transform: scale(0.6);
   }
+}
+
+.lexset {
+  display: none;
 }

@@ -34,3 +34,34 @@ export function toggleDiphthongs(enable?: boolean) {
         }
     }
 }
+
+export function toggleLexsets(enable?: boolean) {
+    if (enable === undefined) {
+        enable = (document.getElementById('radio-2') as HTMLInputElement).checked;
+    }
+    console.log('toggle ' + enable);
+
+    let bounds = document.getElementsByClassName("lexset") as unknown as SVGCircleElement[];
+    for (let bound of bounds) {
+        if (enable) {
+            bound.style.display = "block";
+        } else {
+            bound.style.display = "none";
+        }
+    }
+}
+
+export function hydrateTabs() {
+    document.getElementById('radio-1')?.addEventListener('change', function () {
+        toggleLexsets();
+    });
+    document.getElementById('radio-2')?.addEventListener('change', function () {
+        toggleLexsets();
+    });
+    document.getElementById('radio-3')?.addEventListener('change', function () {
+        toggleLexsets();
+    });
+    document.getElementById('radio-4')?.addEventListener('change', function () {
+        toggleLexsets();
+    });
+}

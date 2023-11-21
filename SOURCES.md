@@ -20,6 +20,10 @@ https://www.soundbridge.io/formants-vowel-sounds
 
 SYNTHESIS:
 https://alemangui.github.io/ramp-to-value
+(REALISM):
+https://www.kvraudio.com/forum/viewtopic.php?t=543452&start=15
+https://www.soundonsound.com/techniques/formant-synthesis
+
 
 The placement of the /ʊ/ is a bit controversial. The current location is the one determined by
 Praat from the reference recording, which is also approximately the same vowel as in the 

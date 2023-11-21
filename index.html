@@ -10,8 +10,7 @@
   <body>
     <div id="app">
       <nav>
-                      <!-- <span class="notification">2</span> -->
-
+        <!-- <span class="notification">2</span> -->
 
         <ul>
           <li><h2>Vowelchart</h2></li>
@@ -31,7 +30,6 @@
         </ul>
         <!-- <ul>
 
-
           <li><h2>Vowelchart</h2></li>
           <li class="tablink active" onclick="changeTab(event, 'tab-home')" >Home</li>
           <li class="tablink" onclick="changeTab(event, 'tab-diph')">Diphthongs</li>
@@ -42,38 +40,39 @@
           </li>
         </ul> -->
       </nav>
+      <p class="info">Click a point to play its sound.</p>
+
       <div id="main">
       
       <!-- <div class="card">-->
-
-
-        <p class="info">Click a point to play its sound.</p>
+        <div class="sidebar-left"></div>
         <div id="vowelchart"></div>
 
-        <p>
+        <div class="sidebar-right">
           <input type="checkbox" id="play-reference" checked onchange="
                                     toggleReferenceRecordings();">
           Enable reference recordings<br>
           <input type="checkbox" id="toggle-diphs" onchange="
                                     toggleDiphthongs();">
           Enable diphthongs<br>
-        </p>
-        <small class="info">
-
-                          <!-- <hr> -->
-          Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>! 
-          <b>F1 and F2 values are approximate.</b> <br>
-          Values from <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
-          a minority measured with <a href="https://pypi.org/project/praat-parselmouth/">Praat</a>. <br>
-          <a href="https://en.wikipedia.org/wiki/IPA_vowel_chart_with_audio">Recordings</a> are by 
-          User:Denelson83 and User:RoachPeter et al. <br>
-          Thanks to <a href="https://github.com/tmhglnd/vowel-formants-graph">Timo Hoogland</a> for 
-          his work on vowel synthesis.
-        </small>
+        </div>
+        
         <!-- <button id="reset" type="button" onclick="oscillator">Reset</button> -->
 
 
       </div>
+
+      <small class="info">
+      
+        <!-- <hr> -->
+        Contribute on <a href="https://github.com/conjuncts/vowelchart">GitHub</a>!
+        <b>F1 and F2 values are approximate.</b> <br>
+        Values from <a href="https://en.wikipedia.org/wiki/Formant#Phonetics">Catford 1988</a>, with
+        a minority measured with <a href="https://pypi.org/project/praat-parselmouth/">Praat</a>. <br>
+        <a href="https://en.wikipedia.org/wiki/IPA_vowel_chart_with_audio">Recordings</a> are by
+        User:Denelson83 and User:RoachPeter et al. <br>
+        Many thanks to the work of <a href="https://github.com/tmhglnd/vowel-formants-graph">Timo Hoogland.
+      </small>
     </div>
     <script src="https://d3js.org/d3.v6.js"></script>
     <script type="module" src="/src/main.ts"></script>

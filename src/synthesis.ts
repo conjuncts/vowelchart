@@ -30,7 +30,7 @@ export class Formant {
     constructor(relativeVolume: number = 1) {
         const oscillator = audioCtx.createOscillator();
         this.oscillator = oscillator;
-        oscillator.type = "sawtooth";
+        oscillator.type = "sawtooth"; // "square";
         oscillator.frequency.setValueAtTime(87, audioCtx.currentTime);
         const filter = audioCtx.createBiquadFilter();
         this.filter = filter;
