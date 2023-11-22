@@ -1,32 +1,32 @@
 export type Vowel = {
-    Filename: string;
-    Symbol: string;
+    filename: string;
+    symbol: string;
     F1: number;
     F2: number;
     F3: number;
 }
 
 export class Diphthong {
-    Symbols: string;
-    Start: Vowel;
-    End: Vowel;
+    symbols: string;
+    start: Vowel;
+    end: Vowel;
     constructor(start: Vowel, end: Vowel, symbols?: string) {
-        this.Symbols =  (!symbols ? '' + start.Symbol + end.Symbol : symbols);
-        this.Start = start;
-        this.End = end;
+        this.symbols =  (!symbols ? '' + start.symbol + end.symbol : symbols);
+        this.start = start;
+        this.end = end;
     }
 }
 
 export class LexicalSet {
-    Name: string;
+    name: string;
     RP: (Vowel | Diphthong)[];
     GA: (Vowel | Diphthong)[];
-    Examples: string[];
+    examples: string[];
     constructor() {
-        this.Name = "";
+        this.name = "";
         this.RP = [];
         this.GA = [];
-        this.Examples = [];
+        this.examples = [];
     }
 }
 

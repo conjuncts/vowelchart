@@ -1,5 +1,6 @@
 import { onLexsetToggle } from "./lexsets";
 
+import * as d3 from 'd3';
 
 
 export function toggleReferenceRecordings(enable?: boolean) {
@@ -17,41 +18,62 @@ export function toggleReferenceRecordings(enable?: boolean) {
         }
     }
 }
+function isDiphsChecked() {
+    return (document.getElementById('toggle-diphs') as HTMLInputElement).checked;
+}
+function isLexsetMode() {
+    return (document.getElementById('radio-2') as HTMLInputElement).checked;
+}
 export function toggleDiphthongs(enable?: boolean) {
     if (enable === undefined) {
-
-        enable = (document.getElementById('toggle-diphs') as HTMLInputElement).checked;
-        // console.log(enable);
+        enable = isDiphsChecked();
     }
-    let bounds = document.getElementsByClassName("diphs-bounds") as unknown as SVGCircleElement[];
+    // instantaneously disable cliakable diphthongs
+    let bounds = document.querySelectorAll(".diph-bounds") as unknown as SVGCircleElement[];
     for (let bound of bounds) {
         if (enable) {
             bound.style.removeProperty("display");
-            // ref.style.zIndex = "0";
         } else {
             bound.style.display = "none";
-            // ref.style.zIndex = "-90";
-
         }
+    }
+    // animate the paths
+    d3.selectAll(".diph-paths")
+        .transition()
+        .duration(200)
+        .attr('stroke-opacity', enable ? 0.5 : 0);
+    if(isLexsetMode()) {
+        toggleLexsetDiphs(enable);
     }
 }
 
 export function toggleLexsets(enable?: boolean) {
     if (enable === undefined) {
-        enable = (document.getElementById('radio-2') as HTMLInputElement).checked;
+        enable = isLexsetMode();
     }
-    console.log('toggle ' + enable);
 
     let bounds = document.getElementsByClassName("lexset") as unknown as SVGCircleElement[];
     for (let bound of bounds) {
         if (enable) {
             bound.style.display = "block";
-            onLexsetToggle(true);
         } else {
             // bound.style.display = "none";
-            onLexsetToggle(false);
         }
     }
+    onLexsetToggle(enable);
+    if(isDiphsChecked()) {
+        toggleLexsetDiphs(enable);
+    }
+
+}
+
+export function toggleLexsetDiphs(enable: boolean) {
+    // isDiphsChecked AND LexsetMode on
+    d3.selectAll(".lex-diph-paths")
+        .transition()
+        .duration(200)
+        .attr('stroke-width', enable ? 20 : 0);
+
 }
 
 export function hydrateTabs() {

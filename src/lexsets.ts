@@ -61,7 +61,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         console.log("lexsets loaded!");
         data.forEach((d: any) => {
             let process = new LexicalSet();
-            process.Name = d["Name"];
+            process.name = d["Name"];
             process.RP = d["RP"].split(", ").map((e2: string) => {
                 let e = e2.replace('ː', '');
                 if(e.length === 1) {
@@ -78,8 +78,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                     return new Diphthong(formantData[e[0]], formantData[e[1]], e);
                 }
             });
-            process.Examples = d['Examples'].split(', ');
-            lexsetData.set(process.Name, process);
+            process.examples = d['Examples'].split(', ');
+            lexsetData.set(process.name, process);
         });
 
         console.log(data);
@@ -89,7 +89,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
         lexsetData.forEach((d: LexicalSet) => {
             if(d.GA[0] !== undefined) {
-                position(d.Name, (d.GA[0] as Vowel).F1, (d.GA[0] as Vowel).F2, x, y);
+                position(d.name, (d.GA[0] as Vowel).F1, (d.GA[0] as Vowel).F2, x, y);
             }
         });
         console.log(lexsetPositions);
@@ -136,15 +136,15 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             console.log("diph: ", diph);
 
             // some r's are here
-            if(!diph.End) continue;
+            if(!diph.end) continue;
             gs.append("path")
-                .attr("d", curve([[x(diph.Start.F2), y(diph.Start.F1)], [x(diph.End.F2), y(diph.End.F1)]]))
-                .classed("diphs-bounds", true)
-                .attr('stroke-width', 20)
+                .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
+                .classed("lex-diph-paths", true)
+                .attr('stroke-opacity', 0.5)
+                .attr('stroke-width', 0)
                 .attr('stroke', '#69b3a20a')
                 .attr('stroke-linecap', 'round')
                 .attr('fill', 'none')
-                .style("display", "none")
                 .style("pointer-events", "none")
         }
     });

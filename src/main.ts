@@ -83,7 +83,7 @@ svg.append("rect")
 
 //Read the data
 // d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2e40f4/raw/b34290f31929ef77fd039e524c27a472c61b069c/vowelchart.tsv").then(function (data) {
-let formantData: Record<string, Vowel> = {};
+let vowelData: Record<string, Vowel> = {};
 
 d3.tsv("formants.tsv").then(function (data) {
     // put data
@@ -93,13 +93,13 @@ d3.tsv("formants.tsv").then(function (data) {
         process["F2"] = +d["F2"];
         process["F3"] = +d["F3"];
 
-        formantData[d.Symbol] = process;
+        vowelData[d.symbol] = process;
     });
     console.log(data);
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
     let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
-    let vertices = frontier.map(d => [x(formantData[d].F2), y(formantData[d].F1)]);
+    let vertices = frontier.map(d => [x(vowelData[d].F2), y(vowelData[d].F1)]);
 
     const curve = d3.line().curve(d3.curveMonotoneX);
 
@@ -125,7 +125,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("y", d => y(d.F1 as any) - 5) 
         .style("user-select", "none")
         .style("pointer-events", "none")
-        .text(d => { return d.Symbol }); // Text content
+        .text(d => { return d.symbol }); // Text content
 
     // .data(data)
     // .enter()
@@ -137,7 +137,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("r", 5)
         .style("pointer-events", "none")
         .style("fill", "#69b3a2")
-        .attr("alt", d => d.Filename);
+        .attr("alt", d => d.filename);
 
     // bounding circles
     gs.append("circle") 
@@ -146,11 +146,11 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("cy", function (d) { return y(d.F1 as any); })
         .attr("r", 8)
         .style("fill", "transparent")
-        .style("cursor", d => d.Symbol === "ʊ̞" ? "help" : "pointer")
+        .style("cursor", d => d.symbol === "ʊ̞" ? "help" : "pointer")
         .style("z-index", "99")
         .on("click", function () {
             var d = d3.select(this).datum() as Vowel;
-            var audio = new Audio("./vowels/" + d.Filename);
+            var audio = new Audio("./vowels/" + d.filename);
             if (enableReferenceVowels) {
                 audio.play();
             }
@@ -164,24 +164,24 @@ d3.tsv("formants.tsv").then(function (data) {
     // add diphthongs
     for (let diphstr of diphs) {
         // let diph = ["a", "ɪ"].map(s => formantData[s]);
-        let diph = diphstr.map(s => formantData[s]);
+        let diph = diphstr.map(s => vowelData[s]);
 
         let player = new DiphthongScheduler(diph[0], diph[1]);
 
         // visible
         svg.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
-            .classed("diphs-bounds", true)
+            .classed("diph-paths", true)
             .attr('stroke', 'blue')
             .attr('fill', 'none')
-            .style("display", "none")
+            .attr('stroke-opacity', 0)
             .style("pointer-events", "none")
             .style("z-index", "-99");
 
         // clickable
         svg.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
-            .classed("diphs-bounds", true)
+            .classed("diph-bounds", true)
             .style("display", "none")
             .attr('stroke-opacity', 0)
             .attr('stroke', 'blue')
@@ -191,20 +191,10 @@ d3.tsv("formants.tsv").then(function (data) {
                 player.play();
             });
 
-        // add test button
-        // svg.append("rect")
-        //   .attr("x", 0)
-        //   .attr("y", height + 10)
-        //   .attr("width", 100)
-        //   .attr("height", 20)
-        //   .style("fill", "red")
-        //   .style("cursor", "pointer")
-        //   .on("click", function () {
-        //     player.play();
-        //   });
+
     }
 }).then(() => {
-    loadLexicalSets(svg, formantData, x, y);
+    loadLexicalSets(svg, vowelData, x, y);
 });
 
 // on mouseup, stop all vowels
