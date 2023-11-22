@@ -1,12 +1,10 @@
 
-// import typescriptLogo from './typescript.svg'
-// import viteLogo from '/vite.svg'
-// import { setupCounter } from './counter.ts';
 
 import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggleReferenceRecordings, toggleDiphthongs, hydrateTabs } from './tabs';
 import { diphs, loadLexicalSets } from './lexsets';
+import { Vowel } from './vowels';
 (window as any).toggleReferenceRecordings = toggleReferenceRecordings;
 (window as any).toggleDiphthongs = toggleDiphthongs;
 
@@ -101,7 +99,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
     let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
-    let vertices = frontier.map(d => [x(formantData[d].F2 as any), y(formantData[d].F1 as any)]);
+    let vertices = frontier.map(d => [x(formantData[d].F2), y(formantData[d].F1)]);
 
     const curve = d3.line().curve(d3.curveMonotoneX);
 
@@ -172,7 +170,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
         // visible
         svg.append("path")
-            .attr("d", curve([[x(diph[0].F2 as any), y(diph[0].F1 as any)], [x(diph[1].F2 as any), y(diph[1].F1 as any)]]))
+            .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diphs-bounds", true)
             .attr('stroke', 'blue')
             .attr('fill', 'none')
@@ -182,7 +180,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
         // clickable
         svg.append("path")
-            .attr("d", curve([[x(diph[0].F2 as any), y(diph[0].F1 as any)], [x(diph[1].F2 as any), y(diph[1].F1 as any)]]))
+            .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diphs-bounds", true)
             .style("display", "none")
             .attr('stroke-opacity', 0)
