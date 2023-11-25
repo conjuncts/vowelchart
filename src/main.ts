@@ -95,7 +95,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
         vowelData[d.symbol] = process;
     });
-    console.log(data);
+    console.log('vowel formants:', data);
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
     let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
@@ -103,12 +103,11 @@ d3.tsv("formants.tsv").then(function (data) {
 
     const curve = d3.line().curve(d3.curveMonotoneX);
 
+    // dotted lines
     svg.append('path')
         .attr('d', curve(vertices as any))
         .attr('stroke', 'black')
         .attr('fill', 'none')
-
-        // dotted lines
         .attr('stroke-dasharray', '5,5')
         .style("pointer-events", "none")
         .style("z-index", "-99");
@@ -122,16 +121,15 @@ d3.tsv("formants.tsv").then(function (data) {
 
     gs.append("text")
         .classed("vowel-text", true)
-        .attr("x", d => x(d.F2 as any) + 5) // Adjust the position as needed
-        .attr("y", d => y(d.F1 as any) - 5) 
-        .style("user-select", "none")
-        .style("pointer-events", "none")
-        .text(d => { return d.symbol }); // Text content
+        .attr("x", d => x(d.F2 as any) + 5)
+        .attr("y", d => y(d.F1 as any) - 5)
+        .style("fill", "black") // animated
+        .text(d => { return d.symbol });
 
     // .data(data)
     // .enter()
 
-    // plot circles
+    // visible vowels
     gs.append("circle")
         .attr("cx", function (d) { return x(d.F2 as any); })
         .attr("cy", function (d) { return y(d.F1 as any); })
@@ -140,15 +138,14 @@ d3.tsv("formants.tsv").then(function (data) {
         .style("fill", "#69b3a2")
         .attr("alt", d => d.filename);
 
-    // bounding circles
+    // clickable vowels
     gs.append("circle") 
-        .classed("refs-bounds", true)
+        .classed("vowel-bounds", true)
         .attr("cx", function (d) { return x(d.F2 as any); })
         .attr("cy", function (d) { return y(d.F1 as any); })
         .attr("r", 8)
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̞" ? "help" : "pointer")
-        .style("z-index", "99")
         .on("click", function () {
             var d = d3.select(this).datum() as Vowel;
             var audio = new Audio("./vowels/" + d.filename);
@@ -163,27 +160,25 @@ d3.tsv("formants.tsv").then(function (data) {
 
 
     // add diphthongs
+    // let diph = ["a", "ɪ"].map(s => formantData[s]);
+
     for (let diphstr of diphs) {
-        // let diph = ["a", "ɪ"].map(s => formantData[s]);
         let diph = diphstr.map(s => vowelData[s]);
 
         let player = new DiphthongScheduler(diph[0], diph[1]);
 
-        // visible
+        // visible diphthongs
         svg.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-paths", true)
             .attr('stroke', '#3b3bb3')
-            // .attr('fill', 'none')
-            .attr('stroke-opacity', 0)
-            // .style("pointer-events", "none")
-            .style("z-index", "-99");
+            .attr('stroke-opacity', 0); // animated
 
-        // clickable
+        // clickable diphthongs
         svg.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-bounds", true)
-            .style("display", "none")
+            .style("display", "none") // animated
             .attr('stroke', 'white') // this just needs to be here
             .attr('stroke-opacity', 0)
             .attr('stroke-width', 10)
@@ -191,7 +186,6 @@ d3.tsv("formants.tsv").then(function (data) {
             .on("click", function () {
                 player.play();
             });
-
 
     }
 }).then(() => {

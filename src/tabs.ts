@@ -1,4 +1,3 @@
-import { onLexsetToggle } from "./lexsets";
 
 import * as d3 from 'd3';
 
@@ -8,7 +7,7 @@ export function toggleReferenceRecordings(enable?: boolean) {
         
         enable = (document.getElementById('play-reference') as HTMLInputElement).checked;
     }
-    let referenceRecordings = document.getElementsByClassName("refs-bounds") as unknown as SVGCircleElement[];
+    let referenceRecordings = document.getElementsByClassName("vowel-bounds") as unknown as SVGCircleElement[];
     for(let ref of referenceRecordings) {
         if(enable) {
             ref.style.removeProperty("display");
@@ -60,7 +59,27 @@ export function toggleLexsets(enable?: boolean) {
             // bound.style.display = "none";
         }
     }
-    onLexsetToggle(enable);
+    if (enable) {
+        d3.selectAll('.lex-circle').transition()
+            .duration(200)
+            .attr("r", 20);
+        d3.selectAll('.lex-text').transition()
+            .duration(200)
+            .style("opacity", "1");
+        d3.selectAll(".vowel-text").transition()
+            .duration(200)
+            .style("fill", "#A9A9A9"); // "#4B8073");
+    } else {
+        d3.selectAll('.lex-circle').transition()
+            .duration(200)
+            .attr("r", 0);
+        d3.selectAll('.lex-text').transition()
+            .duration(200)
+            .style("opacity", "0");
+        d3.selectAll(".vowel-text").transition()
+            .duration(200)
+            .style("fill", "black");
+    }
     if(isDiphsChecked()) {
         toggleLexsetDiphs(enable);
     }

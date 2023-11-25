@@ -294,6 +294,11 @@ input[id=radio-4]:checked~.glider {
   }
 }
 
+
+.vowel-text, .lex-text, .lex-diph-text, .diph-paths {
+  user-select: none;
+  pointer-events: none;
+}
 .lexset {
   display: none;
   font-variant: all-small-caps;
@@ -306,8 +311,6 @@ input[id=radio-4]:checked~.glider {
   fill: blue;
 }
 .lex-diph-text, .diph-paths {
-  user-select: none;
-  pointer-events: none;
   fill: #3b3bb3;
 }
 

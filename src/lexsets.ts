@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Diphthong, LexicalSet, SuffixedVowel, Vowel, isRhotic, vowelFromString } from './vowels';
+import { Diphthong, LexicalSet, Vowel, vowelFromString } from './vowels';
 
 
 export let diphs = `e ɪ
@@ -11,9 +11,6 @@ o ʊ̞`.split("\n").map((x) => x.split(' '));
 // ʊ
 
 export let lexsetData: Map<string, LexicalSet> = new Map();
-
-let lexicalCircles: d3.Selection<SVGCircleElement, d3.DSVRowString<string>, SVGGElement, unknown >;
-let lexicalText: d3.Selection<SVGTextElement, d3.DSVRowString<string>, SVGGElement, unknown >;
 
 
 class AdjustedPosition {
@@ -44,7 +41,6 @@ function position(name: string, F1: number, F2: number,
             texty += 10; // works since duplicates are handled ascending
         }
     }
-    // console.log("set!");
 
     let position = new AdjustedPosition(atx, aty);
     position.adjustedx = textx;
@@ -58,7 +54,6 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
-        console.log("lexsets loaded!");
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
@@ -89,8 +84,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         // }
 
 
-        console.log(data);
-        console.log(lexsetData);
+        // console.log(data);
+        console.log('lexical sets: ', lexsetData);
 
         let vowels = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
 
@@ -99,7 +94,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                 position(d.name, (d.GA[0] as Vowel).F1, (d.GA[0] as Vowel).F2, x, y);
             }
         });
-        console.log(lexsetPositions);
+        // console.log('lexical set positions: ', lexsetPositions);
 
         // place behind, https://stackoverflow.com/a/36792669
         let gs = svg.insert('g', ":first-child")
@@ -108,36 +103,32 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             .enter()
             .append("g");
 
-        lexicalText = gs.append("text")
+        gs.append("text")
             .classed("lexset", true)
             .classed("lex-text", true)
-            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.rhotic!)
-
-            .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5) // Adjust the position as needed
+            
+            .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5)
             .attr("y", d => lexsetPositions.get(d.Name)!.adjustedy + 10)
-            .style("user-select", "none")
-            .style("pointer-events", "none")
             // .style("fill", d => lexsetData.get(d.Name)?.isRhotic() ? "blue" : "black") // blue // 4B8073
-            // .style("fill", "black")
 
-            .style("opacity", "0")
-            .text(d => { return d.Name }); // Text content
+            .style("opacity", "0") // animated
+            .text(d => { return d.Name })
+            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.rhotic!);
 
         // .data(data)
         // .enter()
 
         // plot circles
-        lexicalCircles = gs.append("circle")
+        gs.append("circle")
             .classed("lexset", true)
+            .classed("lex-circle", true)
             .attr("cx", d => lexsetPositions.get(d.Name)!.x)
             .attr("cy", d => lexsetPositions.get(d.Name)!.y)
-            .attr("r", 0)
-            .style("z-index", "-9999")
-            // .style("pointer-events", "none")
-            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.isRhotic())
+            .attr("r", 0) // animated
 
             .style("fill", "#69b3a222")
-            .attr("alt", d => d.Name);
+            .attr("alt", d => d.Name)
+            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.isRhotic());
 
 
         // diphthongs
@@ -150,16 +141,14 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             }
             let diph = lexset.GA[0] as Diphthong;
             
-            console.log("diph: ", diph);
-
-            // some r's are here
+            // console.log("diph: ", diph);
 
             // bounds
             if(!diph.end) continue;
             diphs.append("path")
                 .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
                 .classed("lex-diph-paths", true)
-                .attr('stroke-width', 0)
+                .attr('stroke-width', 0) // animated
                 .attr('stroke', '#69b3a222')
                 .attr('stroke-linecap', 'round')
                 .attr('fill', 'none')
@@ -174,47 +163,16 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if(-270 <= rotation && rotation <= -90) {
                 rotation += 180;
             }
-            console.log(rotation);
+            // console.log(rotation);
             // text
             diphs.append("text")
                 .classed("lex-diph-text", true)
                 .classed("lexset", true)
-                // .attr("x", x(midpoint[0]) - 5)
-                // .attr("y", y(midpoint[1]) - 5)
                 .attr("transform", 
                     `translate(${midpoint[0] - 5}, ${midpoint[1] - 5}) rotate(${rotation})`)
-                // .style("user-select", "none")
-                // .style("pointer-events", "none")
-                // .style("fill", "green")
                 
-                .style("opacity", "0")
+                .style("opacity", "0") // animated
                 .text(lexset.name);
         }
     });
-}
-
-export function onLexsetToggle(activate: boolean) {
-    if(lexicalCircles) {
-        if(activate) {
-            lexicalCircles.transition()
-                .duration(200)
-                .attr("r", 20);
-            lexicalText.transition()
-                .duration(200)
-                .style("opacity", "1");
-            d3.selectAll(".vowel-text").transition()
-                .duration(200)
-                .style("fill", "#4B8073");
-        } else {
-            lexicalCircles.transition()
-                .duration(200)
-                .attr("r", 0);
-            lexicalText.transition()
-                .duration(200)
-                .style("opacity", "0");
-            d3.selectAll(".vowel-text").transition()
-                .duration(200)
-                .style("fill", "black");
-        }
-    }
 }
