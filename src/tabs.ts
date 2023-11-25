@@ -73,6 +73,11 @@ export function toggleLexsetDiphs(enable: boolean) {
         .transition()
         .duration(200)
         .attr('stroke-width', enable ? 20 : 0);
+    
+    d3.selectAll(".lex-diph-text")
+        .transition()
+        .duration(200)
+        .style("opacity", enable ? "1" : "0");
 
 }
 

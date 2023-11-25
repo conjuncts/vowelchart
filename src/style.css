@@ -298,3 +298,16 @@ input[id=radio-4]:checked~.glider {
   display: none;
   font-variant: all-small-caps;
 }
+
+.lex-text {
+  fill: black;
+}
+.lex-text.lex-rhotic {
+  fill: blue;
+}
+.lex-diph-text, .diph-paths {
+  user-select: none;
+  pointer-events: none;
+  fill: #3b3bb3;
+}
+

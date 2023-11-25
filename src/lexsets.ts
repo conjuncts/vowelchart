@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Diphthong, LexicalSet, Vowel } from './vowels';
+import { Diphthong, LexicalSet, SuffixedVowel, Vowel, isRhotic, vowelFromString } from './vowels';
 
 
 export let diphs = `e ɪ
@@ -59,33 +59,40 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
         console.log("lexsets loaded!");
-        data.forEach((d: any) => {
-            let process = new LexicalSet();
-            process.name = d["Name"];
-            process.RP = d["RP"].split(", ").map((e2: string) => {
-                let e = e2.replace('ː', '');
-                if(e.length === 1) {
-                    return formantData[e]; // monophthong
-                } else {
-                    return new Diphthong(formantData[e[0]], formantData[e[1]], e2);
-                }
-            }); // most of these will only have 1 element
-            process.GA = d["GA"].split(", ").map((e2: string) => {
-                let e = e2.replace('ː', '');
-                if (e.length === 1) {
-                    return formantData[e]; // monophthong
-                } else {
-                    return new Diphthong(formantData[e[0]], formantData[e[1]], e);
-                }
-            });
-            process.examples = d['Examples'].split(', ');
-            lexsetData.set(process.name, process);
+        data.forEach((d: any, idx: number) => {
+            let lex = new LexicalSet();
+            lex.name = d["Name"];
+            lex.RP = d["RP"].split(", ").map((s: string) => vowelFromString(s, formantData)); 
+            // most of these will only have 1 element
+            lex.GA = d["GA"].split(", ").map((s: string) => vowelFromString(s, formantData));
+            lex.examples = d['Examples'].split(', ');
+
+            lex.checked = idx < 8; // KIT through CLOTH
+            lex.free = 8 <= idx && idx < 13; // NURSE through THOUGHT
+            lex.diphthong = 13 <= idx && idx < 18; // GOAT through MOUTH
+            lex.weak = 18 <= idx && idx < 21; // PRICE through CHOICE
+            lex.rhotic = 21 <= idx || lex.name === 'NURSE'; // NEAR through CURE and NURSE
+
+            lexsetData.set(lex.name, lex);
         });
+
+        // move rhotics to the end
+        // let rhotics = [];
+        // for(let lexset of lexsetData.values()) {
+        //     if(lexset.isRhotic()) {
+        //         rhotics.push(lexset);
+        //     }
+        // }
+        // for(let rhotic of rhotics) {
+        //     lexsetData.delete(rhotic.name);
+        //     lexsetData.set(rhotic.name, rhotic);
+        // }
+
 
         console.log(data);
         console.log(lexsetData);
 
-        let monopthongs = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
+        let vowels = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
 
         lexsetData.forEach((d: LexicalSet) => {
             if(d.GA[0] !== undefined) {
@@ -97,17 +104,22 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         // place behind, https://stackoverflow.com/a/36792669
         let gs = svg.insert('g', ":first-child")
             .selectAll("text")
-            .data(monopthongs)
+            .data(vowels)
             .enter()
             .append("g");
 
         lexicalText = gs.append("text")
             .classed("lexset", true)
+            .classed("lex-text", true)
+            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.rhotic!)
+
             .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5) // Adjust the position as needed
             .attr("y", d => lexsetPositions.get(d.Name)!.adjustedy + 10)
             .style("user-select", "none")
             .style("pointer-events", "none")
-            .style("fill", "blue")
+            // .style("fill", d => lexsetData.get(d.Name)?.isRhotic() ? "blue" : "black") // blue // 4B8073
+            // .style("fill", "black")
+
             .style("opacity", "0")
             .text(d => { return d.Name }); // Text content
 
@@ -122,11 +134,16 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             .attr("r", 0)
             .style("z-index", "-9999")
             // .style("pointer-events", "none")
+            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.isRhotic())
+
             .style("fill", "#69b3a222")
             .attr("alt", d => d.Name);
 
 
+        // diphthongs
         const curve = d3.line();
+
+        let diphs = svg.insert('g', ":first-child");
         for(let lexset of lexsetData.values()) {
             if(!(lexset.GA[0] instanceof Diphthong)) {
                 continue;
@@ -136,16 +153,42 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             console.log("diph: ", diph);
 
             // some r's are here
+
+            // bounds
             if(!diph.end) continue;
-            gs.append("path")
+            diphs.append("path")
                 .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
                 .classed("lex-diph-paths", true)
-                .attr('stroke-opacity', 0.5)
                 .attr('stroke-width', 0)
-                .attr('stroke', '#69b3a20a')
+                .attr('stroke', '#69b3a222')
                 .attr('stroke-linecap', 'round')
                 .attr('fill', 'none')
                 .style("pointer-events", "none")
+            let dy = y(diph.end.F1) - y(diph.start.F1);
+            let dx = x(diph.end.F2) - x(diph.start.F2);
+            let midpoint = [x(diph.start.F2) +dx/3, y(diph.start.F1) + dy/ 3];
+            // 1/3 point has fewer collision
+            let rotation = Math.atan2(dy, 
+                dx) * 180 / Math.PI;
+
+            if(-270 <= rotation && rotation <= -90) {
+                rotation += 180;
+            }
+            console.log(rotation);
+            // text
+            diphs.append("text")
+                .classed("lex-diph-text", true)
+                .classed("lexset", true)
+                // .attr("x", x(midpoint[0]) - 5)
+                // .attr("y", y(midpoint[1]) - 5)
+                .attr("transform", 
+                    `translate(${midpoint[0] - 5}, ${midpoint[1] - 5}) rotate(${rotation})`)
+                // .style("user-select", "none")
+                // .style("pointer-events", "none")
+                // .style("fill", "green")
+                
+                .style("opacity", "0")
+                .text(lexset.name);
         }
     });
 }
@@ -159,6 +202,9 @@ export function onLexsetToggle(activate: boolean) {
             lexicalText.transition()
                 .duration(200)
                 .style("opacity", "1");
+            d3.selectAll(".vowel-text").transition()
+                .duration(200)
+                .style("fill", "#4B8073");
         } else {
             lexicalCircles.transition()
                 .duration(200)
@@ -166,6 +212,9 @@ export function onLexsetToggle(activate: boolean) {
             lexicalText.transition()
                 .duration(200)
                 .style("opacity", "0");
+            d3.selectAll(".vowel-text").transition()
+                .duration(200)
+                .style("fill", "black");
         }
     }
 }

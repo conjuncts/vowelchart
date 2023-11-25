@@ -121,6 +121,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .append("g");
 
     gs.append("text")
+        .classed("vowel-text", true)
         .attr("x", d => x(d.F2 as any) + 5) // Adjust the position as needed
         .attr("y", d => y(d.F1 as any) - 5) 
         .style("user-select", "none")
@@ -172,10 +173,10 @@ d3.tsv("formants.tsv").then(function (data) {
         svg.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-paths", true)
-            .attr('stroke', 'blue')
-            .attr('fill', 'none')
+            .attr('stroke', '#3b3bb3')
+            // .attr('fill', 'none')
             .attr('stroke-opacity', 0)
-            .style("pointer-events", "none")
+            // .style("pointer-events", "none")
             .style("z-index", "-99");
 
         // clickable
@@ -183,8 +184,8 @@ d3.tsv("formants.tsv").then(function (data) {
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-bounds", true)
             .style("display", "none")
+            .attr('stroke', 'white') // this just needs to be here
             .attr('stroke-opacity', 0)
-            .attr('stroke', 'blue')
             .attr('stroke-width', 10)
             .style("cursor", "pointer")
             .on("click", function () {
