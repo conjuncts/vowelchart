@@ -299,8 +299,7 @@ input[id=radio-4]:checked~.glider {
   user-select: none;
   pointer-events: none;
 }
-.lexset {
-  display: none;
+.lex-text, .lex-diph-text {
   font-variant: all-small-caps;
 }
 

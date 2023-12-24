@@ -103,24 +103,31 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             .enter()
             .append("g");
 
+        
+        let dx = function(name: string) {
+            return lexsetPositions.get(name)!.adjustedx + 5 - lexsetPositions.get(name)!.x;
+        };
+        let dy = function(name: string) {
+            return lexsetPositions.get(name)!.adjustedy + 10 - lexsetPositions.get(name)!.y;
+        };
         gs.append("text")
-            .classed("lexset", true)
             .classed("lex-text", true)
-            
-            .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5)
-            .attr("y", d => lexsetPositions.get(d.Name)!.adjustedy + 10)
+            .attr("x", d => lexsetPositions.get(d.Name)!.x)
+            .attr("y", d => lexsetPositions.get(d.Name)!.y)
+
+            // .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5)
+            // .attr("y", d => lexsetPositions.get(d.Name)!.adjustedy + 10)
             // .style("fill", d => lexsetData.get(d.Name)?.isRhotic() ? "blue" : "black") // blue // 4B8073
 
+            .attr('transform', 
+                d => `translate(${dx(d.Name)}, ${dy(d.Name)})`) 
             .style("opacity", "0") // animated
             .text(d => { return d.Name })
             .classed("lex-rhotic", d => lexsetData.get(d.Name)!.rhotic!);
-
-        // .data(data)
-        // .enter()
+        // the circle and text have the same x/y, but the text just has an offset
 
         // plot circles
         gs.append("circle")
-            .classed("lexset", true)
             .classed("lex-circle", true)
             .attr("cx", d => lexsetPositions.get(d.Name)!.x)
             .attr("cy", d => lexsetPositions.get(d.Name)!.y)
@@ -167,7 +174,6 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             // text
             diphs.append("text")
                 .classed("lex-diph-text", true)
-                .classed("lexset", true)
                 .attr("transform", 
                     `translate(${midpoint[0] - 5}, ${midpoint[1] - 5}) rotate(${rotation})`)
                 

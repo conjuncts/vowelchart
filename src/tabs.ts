@@ -51,14 +51,6 @@ export function toggleLexsets(enable?: boolean) {
         enable = isLexsetMode();
     }
 
-    let bounds = document.getElementsByClassName("lexset") as unknown as SVGCircleElement[];
-    for (let bound of bounds) {
-        if (enable) {
-            bound.style.display = "block";
-        } else {
-            // bound.style.display = "none";
-        }
-    }
     if (enable) {
         d3.selectAll('.lex-circle').transition()
             .duration(200)
