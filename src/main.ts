@@ -3,12 +3,11 @@
 import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggleReferenceRecordings, toggleDiphthongs, hydrateTabs } from './tabs';
-import { diphs, loadLexicalSets } from './lexsets';
-import { Vowel } from './vowels';
+import { loadLexicalSets } from './lexsets';
+import { diphs, Vowel } from './vowels';
 (window as any).toggleReferenceRecordings = toggleReferenceRecordings;
 (window as any).toggleDiphthongs = toggleDiphthongs;
 
-// setupCounter(document.querySelector<HTMLButtonElement>('#counter')!);
 hydrateTabs();
 
 export let enableReferenceVowels = true;
@@ -81,8 +80,7 @@ svg.append("rect")
     });
 
 
-//Read the data
-// d3.tsv("https://gist.githubusercontent.com/conjuncts/906d86ae5fa0d9b922bcc1197e2e40f4/raw/b34290f31929ef77fd039e524c27a472c61b069c/vowelchart.tsv").then(function (data) {
+// Read the data
 let vowelData: Record<string, Vowel> = {};
 
 d3.tsv("formants.tsv").then(function (data) {
@@ -114,6 +112,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
     // begin data points
     let gs = svg.append('g')
+        .attr("id", "svg-vowels")
         .selectAll("text")
         .data(data)
         .enter()
@@ -160,22 +159,22 @@ d3.tsv("formants.tsv").then(function (data) {
 
 
     // add diphthongs
-    // let diph = ["a", "ɪ"].map(s => formantData[s]);
-
+        
+    let diphGroup = svg.insert("g", "#svg-vowels").attr("id", "svg-diphs");
     for (let diphstr of diphs) {
         let diph = diphstr.map(s => vowelData[s]);
 
         let player = new DiphthongScheduler(diph[0], diph[1]);
 
         // visible diphthongs
-        svg.append("path")
+        diphGroup.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-paths", true)
             .attr('stroke', '#3b3bb3')
             .attr('stroke-opacity', 0); // animated
 
         // clickable diphthongs
-        svg.append("path")
+        diphGroup.append("path")
             .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
             .classed("diph-bounds", true)
             .style("display", "none") // animated

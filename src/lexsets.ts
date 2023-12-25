@@ -1,14 +1,26 @@
 import * as d3 from 'd3';
-import { Diphthong, LexicalSet, Vowel, vowelFromString } from './vowels';
+import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, PositionedVowel, isPositionedVowel, isVowel } from './vowels';
 
-
-export let diphs = `e ɪ
-a ɪ
-ɔ ɪ
-a ʊ
-o ʊ̞`.split("\n").map((x) => x.split(' '));
-
-// ʊ
+export class LexicalSet {
+    name: string;
+    RP: (Vowel | PositionedVowel | Diphthong)[];
+    GA: (Vowel | PositionedVowel | Diphthong)[];
+    examples: string[];
+    constructor() {
+        this.name = "";
+        this.RP = [];
+        this.GA = [];
+        this.examples = [];
+    }
+    isRhotic(): boolean {
+        return isRhotic(this.GA[0]);
+    }
+    checked?: boolean;
+    free?: boolean;
+    diphthong?: boolean;
+    weak?: boolean;
+    rhotic?: boolean;
+}
 
 export let lexsetData: Map<string, LexicalSet> = new Map();
 
@@ -16,37 +28,19 @@ export let lexsetData: Map<string, LexicalSet> = new Map();
 class AdjustedPosition {
     x: number;
     y: number;
-    adjustedx: number;
-    adjustedy: number;
+    dx: number;
+    dy: number;
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
-        this.adjustedx = x;
-        this.adjustedy = y;
+        this.dx = 0;
+        this.dy = 0;
     }
 
 }
 
-let lexsetPositions: Map<string, AdjustedPosition> = new Map();
-function position(name: string, F1: number, F2: number, 
-    x: d3.ScaleLinear<number, number, never>,
-    y: d3.ScaleLinear<number, number, never>) {
-    let atx = x(F2);
-    let aty = y(F1);
-    let textx = atx;
-    let texty = aty;
-    // prevent at same position
-    for(let pos of lexsetPositions.values()) {
-        if(Math.abs(pos.adjustedx - textx) < 10 && Math.abs(pos.adjustedy - texty) < 10) {
-            texty += 10; // works since duplicates are handled ascending
-        }
-    }
+// let lexsetPositions: Map<string, PositionedVowel> = new Map();
 
-    let position = new AdjustedPosition(atx, aty);
-    position.adjustedx = textx;
-    position.adjustedy = texty;
-    lexsetPositions.set(name, position);
-}
 export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
     formantData: Record<string, Vowel>,
     x: d3.ScaleLinear<number, number, never>,
@@ -54,12 +48,31 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
+        let _RP_builder: PositionedVowel[] = [];
+        let _GA_builder: PositionedVowel[] = [];
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
-            lex.RP = d["RP"].split(", ").map((s: string) => vowelFromString(s, formantData)); 
+            let RPs: (Vowel | Diphthong)[] = d["RP"].split(", ").map((s: string) => vowelFromString(s, formantData)); 
             // most of these will only have 1 element
-            lex.GA = d["GA"].split(", ").map((s: string) => vowelFromString(s, formantData));
+            let GAs: (Vowel | Diphthong)[] = d["GA"].split(", ").map((s: string) => vowelFromString(s, formantData));
+            
+            // position
+            if(RPs[0] instanceof Diphthong) {
+                lex.RP = RPs;
+            } else {
+                let RP_positioned = positionVowel(lex.name, RPs[0], x, y, _RP_builder);
+                lex.RP = [RP_positioned, ...RPs.slice(1)];
+                _RP_builder.push(RP_positioned);
+            }
+            
+            if(GAs[0] instanceof Diphthong) {
+                lex.GA = GAs;
+            } else {
+                let GA_positioned = positionVowel(lex.name, GAs[0], x, y, _GA_builder);
+                lex.GA = [GA_positioned, ...GAs.slice(1)];
+                _GA_builder.push(GA_positioned);
+            }
             lex.examples = d['Examples'].split(', ');
 
             lex.checked = idx < 8; // KIT through CLOTH
@@ -71,83 +84,56 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             lexsetData.set(lex.name, lex);
         });
 
-        // move rhotics to the end
-        // let rhotics = [];
-        // for(let lexset of lexsetData.values()) {
-        //     if(lexset.isRhotic()) {
-        //         rhotics.push(lexset);
-        //     }
-        // }
-        // for(let rhotic of rhotics) {
-        //     lexsetData.delete(rhotic.name);
-        //     lexsetData.set(rhotic.name, rhotic);
-        // }
-
-
-        // console.log(data);
         console.log('lexical sets: ', lexsetData);
 
-        let vowels = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
-
-        lexsetData.forEach((d: LexicalSet) => {
-            if(d.GA[0] !== undefined) {
-                position(d.name, (d.GA[0] as Vowel).F1, (d.GA[0] as Vowel).F2, x, y);
-            }
-        });
-        // console.log('lexical set positions: ', lexsetPositions);
+        // let vowels = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
 
         // place behind, https://stackoverflow.com/a/36792669
         let gs = svg.insert('g', ":first-child")
-            .selectAll("text")
-            .data(vowels)
-            .enter()
-            .append("g");
+            .attr("id", "svg-lex");
+            // .selectAll("text")
+            // .data(vowels)
+            // .enter()
+            // .append("g");
 
-        
-        let dx = function(name: string) {
-            return lexsetPositions.get(name)!.adjustedx + 5 - lexsetPositions.get(name)!.x;
-        };
-        let dy = function(name: string) {
-            return lexsetPositions.get(name)!.adjustedy + 10 - lexsetPositions.get(name)!.y;
-        };
-        gs.append("text")
-            .classed("lex-text", true)
-            .attr("x", d => lexsetPositions.get(d.Name)!.x)
-            .attr("y", d => lexsetPositions.get(d.Name)!.y)
+        for(let lexset of lexsetData.values()) {
+            if(!isVowel(lexset.GA[0]) || !isPositionedVowel(lexset.GA[0])) {
+                continue;
+            }
+            let pos = lexset.GA[0] as Vowel & PositionedVowel;
+            let node = gs.append("g");
+            node.append("text")
+                .classed("lex-text", true)
+                .attr("x", pos.x)
+                .attr("y", pos.y)
+                .attr('transform', 
+                    `translate(${pos.dx + 5}, ${pos.dy + 10})`) 
+                .style("opacity", "0") // animated
+                .text(lexset.name)
+                .classed("lex-rhotic", lexset.rhotic!);
+            // the circle and text have the same x/y, but the text just has an offset
 
-            // .attr("x", d => lexsetPositions.get(d.Name)!.adjustedx + 5)
-            // .attr("y", d => lexsetPositions.get(d.Name)!.adjustedy + 10)
-            // .style("fill", d => lexsetData.get(d.Name)?.isRhotic() ? "blue" : "black") // blue // 4B8073
+            // plot circles
+            node.append("circle")
+                .classed("lex-circle", true)
+                .attr("cx", pos.x)
+                .attr("cy", pos.y)
+                .attr("r", 0) // animated
 
-            .attr('transform', 
-                d => `translate(${dx(d.Name)}, ${dy(d.Name)})`) 
-            .style("opacity", "0") // animated
-            .text(d => { return d.Name })
-            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.rhotic!);
-        // the circle and text have the same x/y, but the text just has an offset
-
-        // plot circles
-        gs.append("circle")
-            .classed("lex-circle", true)
-            .attr("cx", d => lexsetPositions.get(d.Name)!.x)
-            .attr("cy", d => lexsetPositions.get(d.Name)!.y)
-            .attr("r", 0) // animated
-
-            .style("fill", "#69b3a222")
-            .attr("alt", d => d.Name)
-            .classed("lex-rhotic", d => lexsetData.get(d.Name)!.isRhotic());
-
+                .style("fill", "#69b3a222")
+                .attr("alt", lexset.name);
+                // .classed("lex-rhotic", lexset.rhotic!);
+        }
 
         // diphthongs
         const curve = d3.line();
 
-        let diphs = svg.insert('g', ":first-child");
+        let diphs = svg.insert('g', ":first-child").attr("id", "svg-lex-diphs");
         for(let lexset of lexsetData.values()) {
             if(!(lexset.GA[0] instanceof Diphthong)) {
                 continue;
             }
             let diph = lexset.GA[0] as Diphthong;
-            
             // console.log("diph: ", diph);
 
             // bounds
@@ -170,13 +156,11 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if(-270 <= rotation && rotation <= -90) {
                 rotation += 180;
             }
-            // console.log(rotation);
             // text
             diphs.append("text")
                 .classed("lex-diph-text", true)
                 .attr("transform", 
                     `translate(${midpoint[0] - 5}, ${midpoint[1] - 5}) rotate(${rotation})`)
-                
                 .style("opacity", "0") // animated
                 .text(lexset.name);
         }

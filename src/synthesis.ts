@@ -10,8 +10,6 @@ export class Formant {
     baseVolume: number = 1;
     relativeVolume: number = 1;
 
-
-
     _on: boolean = false;
     // _init: boolean = false;
 
@@ -99,7 +97,6 @@ export function changeVowel(vowel: Vowel) {
         formants[2].value = vowel.F3;
     }
 }
-// (window as any).playVowel = playVowel;
 
 export function stopVowel() {
     formants.forEach(f => f.stop());

@@ -41,6 +41,7 @@ h1 {
   display: flex;
   flex-direction: column;
   flex: 1;
+  margin-bottom: 2em;
 }
 #main {
   align-self: center;
@@ -307,7 +308,7 @@ input[id=radio-4]:checked~.glider {
   fill: black;
 }
 .lex-text.lex-rhotic {
-  fill: blue;
+  fill: darkorchid;
 }
 .lex-diph-text, .diph-paths {
   fill: #3b3bb3;

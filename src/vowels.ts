@@ -42,26 +42,7 @@ export class SuffixedVowel extends Vowel {
 
 }
 
-export class LexicalSet {
-    name: string;
-    RP: (Vowel | Diphthong)[];
-    GA: (Vowel | Diphthong)[];
-    examples: string[];
-    constructor() {
-        this.name = "";
-        this.RP = [];
-        this.GA = [];
-        this.examples = [];
-    }
-    isRhotic(): boolean {
-        return isRhotic(this.GA[0]);
-    }
-    checked?: boolean;
-    free?: boolean;
-    diphthong?: boolean;
-    weak?: boolean;
-    rhotic?: boolean;
-}
+
 
 export function vowelFromString(s: string, formantData: Record<string, Vowel>): Vowel | Diphthong {
     if (s.length === 1) {
@@ -81,4 +62,51 @@ export function vowelFromString(s: string, formantData: Record<string, Vowel>): 
 
 export function isRhotic(x: any): x is SuffixedVowel {
     return x.suffix === 'r';
+}
+
+export let diphs = `e ɪ
+a ɪ
+ɔ ɪ
+a ʊ
+o ʊ̞`.split("\n").map((x) => x.split(' '));
+
+// ʊ
+
+export interface PositionedVowel extends Vowel {
+    x: number;
+    y: number;
+    dx: number;
+    dy: number;
+}
+
+export function positionVowel<T extends Vowel>(name: string, vowel: T, // F1: number, F2: number, 
+    x: d3.ScaleLinear<number, number, never>,
+    y: d3.ScaleLinear<number, number, never>,
+    checkCollisionsWith: Iterable<PositionedVowel>): T & PositionedVowel {
+
+
+    let atx = x(vowel.F2);
+    let aty = y(vowel.F1);
+    let textx = atx;
+    let texty = aty;
+    // prevent at same position
+    for (let pos of checkCollisionsWith) {
+        if (Math.abs(pos.x + pos.dx - textx) < 10 && Math.abs(pos.y + pos.dy - texty) < 10) {
+            texty += 10; // works since duplicates are handled ascending
+        }
+    }
+
+    // let position = new AdjustedPosition(atx, aty);
+    // position.dx = (textx - atx);
+    // position.dy = (texty - aty);
+    let out = Object.assign({}, vowel) as (T & PositionedVowel);
+    out.x = atx;
+    out.y = aty;
+    out.dx = (textx - atx);
+    out.dy = (texty - aty);
+    return out;
+}
+
+export function isPositionedVowel(x: any): x is PositionedVowel {
+    return x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
 }
