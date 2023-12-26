@@ -58,9 +58,15 @@ export function toggleLexsets(enable?: boolean) {
         d3.selectAll('.lex-text').transition()
             .duration(200)
             .style("opacity", "1");
-        d3.selectAll(".vowel-text").transition()
-            .duration(200)
-            .style("fill", "#A9A9A9"); // "#4B8073");
+        setTimeout(() => {
+            d3.selectAll(".vowel-text").style("fill", "#A9A9A9");
+        }, 100);
+        // d3.selectAll(".vowel-text").transition()
+        //     .duration(200)
+        //     .style("fill", "#A9A9A9"); // "#4B8073");
+        for(let x of document.getElementsByClassName("lex-only")) {
+            x.classList.remove("hidden");
+        }
     } else {
         d3.selectAll('.lex-circle').transition()
             .duration(200)
@@ -68,9 +74,14 @@ export function toggleLexsets(enable?: boolean) {
         d3.selectAll('.lex-text').transition()
             .duration(200)
             .style("opacity", "0");
-        d3.selectAll(".vowel-text").transition()
-            .duration(200)
-            .style("fill", "black");
+        setTimeout(() => {
+            // d3.selectAll(".lex-text").style("opacity", "0");
+            d3.selectAll(".vowel-text").style("fill", "black");
+        }, 100);
+        for (let x of document.getElementsByClassName("lex-only")) {
+            x.classList.add("hidden");
+        }
+        
     }
     if(isDiphsChecked()) {
         toggleLexsetDiphs(enable);
@@ -106,3 +117,4 @@ export function hydrateTabs() {
         toggleLexsets();
     });
 }
+

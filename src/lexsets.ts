@@ -24,21 +24,6 @@ export class LexicalSet {
 
 export let lexsetData: Map<string, LexicalSet> = new Map();
 
-
-class AdjustedPosition {
-    x: number;
-    y: number;
-    dx: number;
-    dy: number;
-    constructor(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-        this.dx = 0;
-        this.dy = 0;
-    }
-
-}
-
 // let lexsetPositions: Map<string, PositionedVowel> = new Map();
 
 export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
@@ -86,8 +71,6 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
         console.log('lexical sets: ', lexsetData);
 
-        // let vowels = data.filter(d => !(lexsetData.get(d.Name)?.GA[0] instanceof Diphthong));
-
         // place behind, https://stackoverflow.com/a/36792669
         let gs = svg.insert('g', ":first-child")
             .attr("id", "svg-lex");
@@ -101,7 +84,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                 continue;
             }
             let pos = lexset.GA[0] as Vowel & PositionedVowel;
-            let node = gs.append("g");
+            let node = gs.append("g")
+                .classed(`lex-${lexset.name}`, true);
             node.append("text")
                 .classed("lex-text", true)
                 .attr("x", pos.x)
@@ -165,4 +149,38 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                 .text(lexset.name);
         }
     });
+}
+
+export function toggleRP(enable?: boolean) {
+    if (enable === undefined) {
+        enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
+    }
+    function* yieldValues() {
+        for (let lexset of lexsetData.values()) {
+            let pos = enable ? lexset.RP[0] : lexset.GA[0];
+            if (!isVowel(pos) || !isPositionedVowel(pos)) {
+                continue;
+            }
+            yield [lexset, pos] as [LexicalSet, Vowel & PositionedVowel];
+        }
+    }
+    for (let [lexset, pos] of yieldValues()) {
+        let node = d3.select(`.lex-${lexset.name}`);
+        
+        node.select(".lex-text")
+            .transition()
+            .duration(300)
+            .attr("x", pos.x)
+            .attr("y", pos.y)
+            .attr('transform',
+                `translate(${pos.dx + 5}, ${pos.dy + 10})`);
+
+        // plot circles
+        node.select(".lex-circle")
+            .transition()
+            .duration(200)
+            .attr("cx", pos.x)
+            .attr("cy", pos.y);
+    }
+
 }

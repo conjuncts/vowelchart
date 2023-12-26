@@ -49,11 +49,20 @@
         <div class="sidebar-right">
           <input type="checkbox" id="play-reference" checked onchange="
                                     toggleReferenceRecordings();">
-          Enable reference recordings<br>
+          Reference recordings<br>
           <input type="checkbox" id="toggle-diphs" onchange="
                                     toggleDiphthongs();">
-          Enable diphthongs<br>
+          Diphthongs<br>
+          
+          <div class="lex-only hidden">
+            <input type="checkbox" id="toggle-rp" onchange="
+                                                      toggleRP();">
+            RP<br>
+            
+          </div>
         </div>
+        
+
         
         <!-- <button id="reset" type="button" onclick="oscillator">Reset</button> -->
 
@@ -72,7 +81,7 @@
         User:Denelson83 and User:RoachPeter et al. <br>
         Many thanks to
         Eric Armstrong's <a href="https://ecampusontario.pressbooks.pub/lexicalsets/">"Lexical Sets for Actors"</a>,
-        and Timo Hoogland's <a href="https://github.com/tmhglnd/vowel-formants-graph">formant synthesis code</a>.
+        and <br> Timo Hoogland's <a href="https://github.com/tmhglnd/vowel-formants-graph">formant synthesis code</a>.
       </small>
     </div>
     <script src="https://d3js.org/d3.v6.js"></script>

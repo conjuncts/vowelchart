@@ -314,3 +314,7 @@ input[id=radio-4]:checked~.glider {
   fill: #3b3bb3;
 }
 
+.hidden {
+  display: none;
+}
+

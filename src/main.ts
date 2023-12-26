@@ -3,10 +3,11 @@
 import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggleReferenceRecordings, toggleDiphthongs, hydrateTabs } from './tabs';
-import { loadLexicalSets } from './lexsets';
+import { loadLexicalSets, toggleRP } from './lexsets';
 import { diphs, Vowel } from './vowels';
 (window as any).toggleReferenceRecordings = toggleReferenceRecordings;
 (window as any).toggleDiphthongs = toggleDiphthongs;
+(window as any).toggleRP = toggleRP;
 
 hydrateTabs();
 
@@ -122,7 +123,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .classed("vowel-text", true)
         .attr("x", d => x(d.F2 as any) + 5)
         .attr("y", d => y(d.F1 as any) - 5)
-        .style("fill", "black") // animated
+        .style("fill", "black") // no longer animated
         .text(d => { return d.symbol });
 
     // .data(data)
