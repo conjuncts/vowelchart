@@ -79,7 +79,7 @@ export interface PositionedVowel extends Vowel {
     dy: number;
 }
 
-export function positionVowel<T extends Vowel>(name: string, vowel: T, // F1: number, F2: number, 
+export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>,
     checkCollisionsWith: Iterable<PositionedVowel>): T & PositionedVowel {

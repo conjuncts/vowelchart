@@ -46,7 +46,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if(RPs[0] instanceof Diphthong) {
                 lex.RP = RPs;
             } else {
-                let RP_positioned = positionVowel(lex.name, RPs[0], x, y, _RP_builder);
+                let RP_positioned = positionVowel(RPs[0], x, y, _RP_builder);
                 lex.RP = [RP_positioned, ...RPs.slice(1)];
                 _RP_builder.push(RP_positioned);
             }
@@ -54,7 +54,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if(GAs[0] instanceof Diphthong) {
                 lex.GA = GAs;
             } else {
-                let GA_positioned = positionVowel(lex.name, GAs[0], x, y, _GA_builder);
+                let GA_positioned = positionVowel(GAs[0], x, y, _GA_builder);
                 lex.GA = [GA_positioned, ...GAs.slice(1)];
                 _GA_builder.push(GA_positioned);
             }
