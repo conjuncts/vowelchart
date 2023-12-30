@@ -11,6 +11,7 @@ import { diphs, Vowel } from './vowels';
 
 hydrateTabs();
 
+
 export let enableReferenceVowels = true;
 
 // set the dimensions and margins of the graph
@@ -91,7 +92,7 @@ d3.tsv("formants.tsv").then(function (data) {
         process["F1"] = +d["F1"];
         process["F2"] = +d["F2"];
         process["F3"] = +d["F3"];
-
+        d["rounded"] = d["filename"].includes("_rounded");
         vowelData[d.symbol] = process;
     });
     console.log('vowel formants:', data);
@@ -115,7 +116,7 @@ d3.tsv("formants.tsv").then(function (data) {
     let gs = svg.append('g')
         .attr("id", "svg-vowels")
         .selectAll("text")
-        .data(data)
+        .data(Object.values(vowelData))
         .enter()
         .append("g");
 
@@ -123,11 +124,8 @@ d3.tsv("formants.tsv").then(function (data) {
         .classed("vowel-text", true)
         .attr("x", d => x(d.F2 as any) + 5)
         .attr("y", d => y(d.F1 as any) - 5)
-        .style("fill", "black") // no longer animated
+        .style("fill", d => d.rounded ? "blue" : "black") // no longer animated
         .text(d => { return d.symbol });
-
-    // .data(data)
-    // .enter()
 
     // visible vowels
     gs.append("circle")
@@ -145,7 +143,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("cy", function (d) { return y(d.F1 as any); })
         .attr("r", 8)
         .style("fill", "transparent")
-        .style("cursor", d => d.symbol === "ʊ̞" ? "help" : "pointer")
+        .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
         .on("click", function () {
             var d = d3.select(this).datum() as Vowel;
             var audio = new Audio("./vowels/" + d.filename);
@@ -190,6 +188,8 @@ d3.tsv("formants.tsv").then(function (data) {
     }
 }).then(() => {
     loadLexicalSets(svg, vowelData, x, y);
+
+    
 });
 
 // on mouseup, stop all vowels

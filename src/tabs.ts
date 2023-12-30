@@ -1,6 +1,26 @@
 
 import * as d3 from 'd3';
+import { Vowel } from './vowels';
 
+export enum Tab {
+    HOME = 1,
+    LEXSETS = 2,
+    GVS = 3,
+    MERGERS = 4
+}
+
+export function toggle(key: string, enable: boolean) {
+    switch (key) {
+        case 'diphthongs':
+            toggleDiphthongs(enable);
+            break;
+        case 'referenceRecordings':
+            toggleReferenceRecordings(enable);
+            break;
+        default:
+            console.error("Unknown toggle key: " + key);
+    }
+}
 
 export function toggleReferenceRecordings(enable?: boolean) {
     if(enable === undefined) {
@@ -20,8 +40,11 @@ export function toggleReferenceRecordings(enable?: boolean) {
 function isDiphsChecked() {
     return (document.getElementById('toggle-diphs') as HTMLInputElement).checked;
 }
-function isLexsetMode() {
-    return (document.getElementById('radio-2') as HTMLInputElement).checked;
+function isLexsetMode(tab?: Tab) {
+    if(tab === undefined) {
+        tab = activeTab;
+    }
+    return tab !== Tab.HOME;
 }
 export function toggleDiphthongs(enable?: boolean) {
     if (enable === undefined) {
@@ -51,42 +74,32 @@ export function toggleLexsets(enable?: boolean) {
         enable = isLexsetMode();
     }
 
+    d3.selectAll('.lex-circle').transition()
+        .duration(200)
+        .attr("r", enable ? 20 : 0);
+    d3.selectAll('.lex-text').transition()
+        .duration(200)
+        .style("opacity", enable ? "1" : "0");
     if (enable) {
-        d3.selectAll('.lex-circle').transition()
-            .duration(200)
-            .attr("r", 20);
-        d3.selectAll('.lex-text').transition()
-            .duration(200)
-            .style("opacity", "1");
         setTimeout(() => {
             d3.selectAll(".vowel-text").style("fill", "#A9A9A9");
         }, 100);
-        // d3.selectAll(".vowel-text").transition()
-        //     .duration(200)
         //     .style("fill", "#A9A9A9"); // "#4B8073");
         for(let x of document.getElementsByClassName("lex-only")) {
             x.classList.remove("hidden");
         }
     } else {
-        d3.selectAll('.lex-circle').transition()
-            .duration(200)
-            .attr("r", 0);
-        d3.selectAll('.lex-text').transition()
-            .duration(200)
-            .style("opacity", "0");
         setTimeout(() => {
-            // d3.selectAll(".lex-text").style("opacity", "0");
-            d3.selectAll(".vowel-text").style("fill", "black");
+            d3.selectAll(".vowel-text")
+                .style("fill", d => (d as Vowel).rounded ? "blue" : "black");
         }, 100);
         for (let x of document.getElementsByClassName("lex-only")) {
             x.classList.add("hidden");
         }
-        
     }
     if(isDiphsChecked()) {
         toggleLexsetDiphs(enable);
     }
-
 }
 
 export function toggleLexsetDiphs(enable: boolean) {
@@ -102,19 +115,56 @@ export function toggleLexsetDiphs(enable: boolean) {
         .style("opacity", enable ? "1" : "0");
 
 }
-
+let activeTab = Tab.HOME;
 export function hydrateTabs() {
     document.getElementById('radio-1')?.addEventListener('change', function () {
-        toggleLexsets();
+        enterTab(Tab.HOME, activeTab);
     });
     document.getElementById('radio-2')?.addEventListener('change', function () {
-        toggleLexsets();
+        enterTab(Tab.LEXSETS, activeTab);
     });
     document.getElementById('radio-3')?.addEventListener('change', function () {
-        toggleLexsets();
+        enterTab(Tab.GVS, activeTab);
     });
     document.getElementById('radio-4')?.addEventListener('change', function () {
-        toggleLexsets();
+        enterTab(Tab.MERGERS, activeTab);
     });
+    // console.log("hydrate");
+    // activeTab = recalculateActiveTab();
+    // if(activeTab !== Tab.HOME) {
+    //     enterTab(activeTab, Tab.HOME);
+    // }
+    
 }
-
+function enterTab(tab: Tab, from: Tab) {
+    console.log("entering", tab, "from", from);
+    if(tab === from) {
+        return;
+    }
+    if(tab === Tab.HOME) {
+        for (let x of document.getElementsByClassName("home-only")) {
+            x.classList.remove("hidden");
+        }
+    }
+    if(from === Tab.HOME) {
+        for (let x of document.getElementsByClassName("home-only")) {
+            x.classList.add("hidden");
+        }
+    }
+    if(isLexsetMode(tab) !== isLexsetMode(from)) {
+        console.log("toggling lexsets");
+        toggleLexsets(isLexsetMode(tab));
+    }
+    activeTab = tab;
+}
+function recalculateActiveTab() {
+    let tab = Tab.HOME;
+    if((document.getElementById('radio-2') as HTMLInputElement).checked) {
+        tab = Tab.LEXSETS;
+    } else if((document.getElementById('radio-3') as HTMLInputElement).checked) {
+        tab = Tab.GVS;
+    } else if((document.getElementById('radio-4') as HTMLInputElement).checked) {
+        tab = Tab.MERGERS;
+    }
+    return tab;
+}

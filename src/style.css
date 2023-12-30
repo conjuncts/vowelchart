@@ -307,7 +307,7 @@ input[id=radio-4]:checked~.glider {
 .lex-text {
   fill: black;
 }
-.lex-text.lex-rhotic {
+.lex-rhotic {
   fill: darkorchid;
 }
 .lex-diph-text, .diph-paths {
@@ -318,3 +318,9 @@ input[id=radio-4]:checked~.glider {
   display: none;
 }
 
+.legend-sq {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border: 1px solid black;
+}

@@ -4,12 +4,14 @@ export class Vowel {
     F1: number;
     F2: number;
     F3: number;
+    rounded: boolean;
     constructor(filename: string, symbol: string, F1: number, F2: number, F3: number) {
         this.filename = filename;
         this.symbol = symbol;
         this.F1 = F1;
         this.F2 = F2;
         this.F3 = F3;
+        this.rounded = filename.includes('_rounded');
     }
 }
 
@@ -44,18 +46,26 @@ export class SuffixedVowel extends Vowel {
 
 
 
-export function vowelFromString(s: string, formantData: Record<string, Vowel>): Vowel | Diphthong {
+export function vowelFromString(s: string, formantData: Record<string, Vowel>): Vowel | Diphthong | undefined {
     if (s.length === 1) {
         return formantData[s]; // monophthong
     }
     if (s.length === 2) {
+        let first = formantData[s[0]];
+        if(first === undefined) {
+            return undefined;
+        }
         if (s[1] === 'r') {
-            return new SuffixedVowel(formantData[s[0]], 'r');
+            return new SuffixedVowel(first, 'r');
         }
         if (s[1] === 'ː') {
-            return new SuffixedVowel(formantData[s[0]], 'ː');
+            return new SuffixedVowel(first, 'ː');
         }
-        return new Diphthong(formantData[s[0]], formantData[s[1]], s);
+        let second = formantData[s[1]];
+        if(second === undefined) {
+            return undefined;
+        }
+        return new Diphthong(first, second, s);
     }
     throw new Error("Invalid string: " + s);
 }
@@ -68,7 +78,7 @@ export let diphs = `e ɪ
 a ɪ
 ɔ ɪ
 a ʊ
-o ʊ̞`.split("\n").map((x) => x.split(' '));
+o ʊ̝`.split("\n").map((x) => x.split(' '));
 
 // ʊ
 
