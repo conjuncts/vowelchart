@@ -1,10 +1,10 @@
 import * as d3 from 'd3';
-import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, PositionedVowel, isPositionedVowel, isVowel } from './vowels';
+import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, AdjustedPosition, isPositionedVowel, isVowel, MixedVowel } from './vowels';
 
 export class LexicalSet {
     name: string;
-    RP: (Vowel | PositionedVowel | Diphthong)[];
-    GA: (Vowel | PositionedVowel | Diphthong)[];
+    RP: (Vowel | AdjustedPosition | Diphthong)[];
+    GA: (Vowel | AdjustedPosition | Diphthong)[];
     examples: string[];
     constructor() {
         this.name = "";
@@ -33,8 +33,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
-        let _RP_builder: PositionedVowel[] = [];
-        let _GA_builder: PositionedVowel[] = [];
+        let _RP_builder: AdjustedPosition[] = [];
+        let _GA_builder: AdjustedPosition[] = [];
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
@@ -74,16 +74,12 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         // place behind, https://stackoverflow.com/a/36792669
         let gs = svg.insert('g', ":first-child")
             .attr("id", "svg-lex");
-            // .selectAll("text")
-            // .data(vowels)
-            // .enter()
-            // .append("g");
 
         for(let lexset of lexsetData.values()) {
             if(!isVowel(lexset.GA[0]) || !isPositionedVowel(lexset.GA[0])) {
                 continue;
             }
-            let pos = lexset.GA[0] as Vowel & PositionedVowel;
+            let pos = lexset.GA[0] as Vowel & AdjustedPosition;
             let node = gs.append("g")
                 .classed(`lex-${lexset.name}`, true);
             node.append("text")
@@ -122,14 +118,16 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
             // bounds
             if(!diph.end) continue;
-            diphs.append("path")
-                .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
-                .classed("lex-diph-paths", true)
-                .attr('stroke-width', 0) // animated
-                .attr('stroke', '#69b3a222')
-                .attr('stroke-linecap', 'round')
-                .attr('fill', 'none')
-                .style("pointer-events", "none")
+            // diphs.append("path")
+            //     .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
+            //     // arrowhead
+            //     .classed("lex-diph-bounds", true)
+            //     .attr('stroke-width', 0) // no longer animated
+            //     .attr('stroke', '#69b3a222')
+            //     .attr('stroke-linecap', 'round')
+            //     .attr('fill', 'none')
+            //     .style("pointer-events", "none")
+            
             let dy = y(diph.end.F1) - y(diph.start.F1);
             let dx = x(diph.end.F2) - x(diph.start.F2);
             let midpoint = [x(diph.start.F2) +dx/3, y(diph.start.F1) + dy/ 3];
@@ -144,7 +142,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             diphs.append("text")
                 .classed("lex-diph-text", true)
                 .attr("transform", 
-                    `translate(${midpoint[0] - 5}, ${midpoint[1] - 5}) rotate(${rotation})`)
+                    `translate(${midpoint[0]}, ${midpoint[1]}) rotate(${rotation})`)
                 .style("opacity", "0") // animated
                 .text(lexset.name);
         }
@@ -155,32 +153,50 @@ export function toggleRP(enable?: boolean) {
     if (enable === undefined) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
-    function* yieldValues() {
+    function* yieldValues(): Generator<[LexicalSet, MixedVowel, MixedVowel], 
+                void, unknown> {
         for (let lexset of lexsetData.values()) {
-            let pos = enable ? lexset.RP[0] : lexset.GA[0];
-            if (!isVowel(pos) || !isPositionedVowel(pos)) {
-                continue;
+            let pos;
+            let was;
+            if(enable) {
+                pos = lexset.RP[0];
+                was = lexset.GA[0];
+            } else {
+                pos = lexset.GA[0];
+                was = lexset.RP[0];
             }
-            yield [lexset, pos] as [LexicalSet, Vowel & PositionedVowel];
+            if (pos instanceof Diphthong) {
+                yield [lexset, pos, was] as [LexicalSet, Diphthong, MixedVowel];
+                continue;
+            } else if (isVowel(pos) && isPositionedVowel(pos)) {
+                yield [lexset, pos, was] as [LexicalSet, Vowel & AdjustedPosition, MixedVowel];
+                
+            }
+            
         }
     }
     for (let [lexset, pos] of yieldValues()) {
         let node = d3.select(`.lex-${lexset.name}`);
         
-        node.select(".lex-text")
-            .transition()
-            .duration(300)
-            .attr("x", pos.x)
-            .attr("y", pos.y)
-            .attr('transform',
-                `translate(${pos.dx + 5}, ${pos.dy + 10})`);
+        if(pos instanceof Diphthong) {
+            
+        } else {
+            // monophthong
+            node.select(".lex-text")
+                .transition()
+                .duration(300)
+                .attr("x", pos.x)
+                .attr("y", pos.y)
+                .attr('transform',
+                    `translate(${pos.dx + 5}, ${pos.dy + 10})`);
 
-        // plot circles
-        node.select(".lex-circle")
-            .transition()
-            .duration(200)
-            .attr("cx", pos.x)
-            .attr("cy", pos.y);
+            // plot circles
+            node.select(".lex-circle")
+                .transition()
+                .duration(200)
+                .attr("cx", pos.x)
+                .attr("cy", pos.y);
+        }
     }
 
 }

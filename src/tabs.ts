@@ -64,6 +64,10 @@ export function toggleDiphthongs(enable?: boolean) {
         .transition()
         .duration(200)
         .attr('stroke-opacity', enable ? 0.5 : 0);
+    d3.selectAll(".diph-arrowhead")
+        .transition()
+        .duration(200)
+        .attr('opacity', enable ? 0.5 : 0);
     if(isLexsetMode()) {
         toggleLexsetDiphs(enable);
     }
@@ -104,10 +108,10 @@ export function toggleLexsets(enable?: boolean) {
 
 export function toggleLexsetDiphs(enable: boolean) {
     // isDiphsChecked AND LexsetMode on
-    d3.selectAll(".lex-diph-paths")
-        .transition()
-        .duration(200)
-        .attr('stroke-width', enable ? 20 : 0);
+    // d3.selectAll(".lex-diph-bounds")
+    //     .transition()
+    //     .duration(200)
+    //     .attr('stroke-width', enable ? 20 : 0);
     
     d3.selectAll(".lex-diph-text")
         .transition()

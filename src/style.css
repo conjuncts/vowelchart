@@ -307,10 +307,10 @@ input[id=radio-4]:checked~.glider {
 .lex-text {
   fill: black;
 }
-.lex-rhotic {
+.lex-rhotic.lex-rhotic {
   fill: darkorchid;
 }
-.lex-diph-text, .diph-paths {
+.lex-diph-text, .diph-paths, .diph-arrowhead {
   fill: #3b3bb3;
 }
 

@@ -133,7 +133,7 @@ export class DiphthongScheduler extends VowelScheduler {
     startV: Vowel;
     endV: Vowel;
     duration=0.6;
-    holdDuration=0.15;
+    holdDuration=0.1;
     /**
      * 
      * @param startVowel 
@@ -141,7 +141,7 @@ export class DiphthongScheduler extends VowelScheduler {
      * @param duration in s
      * @param steps 
      */
-    constructor(startVowel: Vowel, endVowel: Vowel, duration = 0.6, hold_duration=0.10) {
+    constructor(startVowel: Vowel, endVowel: Vowel, duration = 0.6, hold_duration=0.08) {
         super();
         this.startV = startVowel;
         this.endV = endVowel;

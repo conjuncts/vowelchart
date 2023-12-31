@@ -5,6 +5,7 @@ export class Vowel {
     F2: number;
     F3: number;
     rounded: boolean;
+    show: boolean;
     constructor(filename: string, symbol: string, F1: number, F2: number, F3: number) {
         this.filename = filename;
         this.symbol = symbol;
@@ -12,6 +13,7 @@ export class Vowel {
         this.F2 = F2;
         this.F3 = F3;
         this.rounded = filename.includes('_rounded');
+        this.show = filename !== 'hidden.ogg.mp3';
     }
 }
 
@@ -27,6 +29,9 @@ export class Diphthong {
         this.symbols =  (!symbols ? '' + start.symbol + end.symbol : symbols);
         this.start = start;
         this.end = end;
+    }
+    endpoints() {
+        
     }
 }
 
@@ -75,14 +80,14 @@ export function isRhotic(x: any): x is SuffixedVowel {
 }
 
 export let diphs = `e ɪ
-a ɪ
+ä ɪ
 ɔ ɪ
-a ʊ
+ä ʊ
 o ʊ̝`.split("\n").map((x) => x.split(' '));
-
+// ä j
 // ʊ
 
-export interface PositionedVowel extends Vowel {
+export interface AdjustedPosition extends Vowel {
     x: number;
     y: number;
     dx: number;
@@ -92,7 +97,7 @@ export interface PositionedVowel extends Vowel {
 export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>,
-    checkCollisionsWith: Iterable<PositionedVowel>): T & PositionedVowel {
+    checkCollisionsWith: Iterable<AdjustedPosition>): T & AdjustedPosition {
 
 
     let atx = x(vowel.F2);
@@ -109,7 +114,7 @@ export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: numb
     // let position = new AdjustedPosition(atx, aty);
     // position.dx = (textx - atx);
     // position.dy = (texty - aty);
-    let out = Object.assign({}, vowel) as (T & PositionedVowel);
+    let out = Object.assign({}, vowel) as (T & AdjustedPosition);
     out.x = atx;
     out.y = aty;
     out.dx = (textx - atx);
@@ -117,6 +122,9 @@ export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: numb
     return out;
 }
 
-export function isPositionedVowel(x: any): x is PositionedVowel {
+export function isPositionedVowel(x: any): x is AdjustedPosition {
     return x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
 }
+
+export type PositionedVowel = (Vowel & AdjustedPosition);
+export type MixedVowel = PositionedVowel | Diphthong;

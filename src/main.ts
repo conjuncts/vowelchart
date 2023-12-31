@@ -11,7 +11,6 @@ import { diphs, Vowel } from './vowels';
 
 hydrateTabs();
 
-
 export let enableReferenceVowels = true;
 
 // set the dimensions and margins of the graph
@@ -20,44 +19,32 @@ const margin = { top: 10, right: 30, bottom: 30, left: 60 },
     height = 600 - margin.top - margin.bottom; // 400
 
 // append the svg object to the body of the page
-const svg = d3.select("#vowelchart")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+const svg = d3.select("#vowelchart svg g") as d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    // .attr("width", width + margin.left + margin.right)
+    // .attr("height", height + margin.top + margin.bottom)
+    // .append("g")
+    // .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
 let topOffset = 20;
 let rightOffset = 40;
-// Add X axis
+// Axes
+let axes = svg.select("#axes");
 const x = d3.scaleLinear()
     .domain([2500, 500])
     .range([0, width - rightOffset]);
-svg.append("g")
+axes.append("g")
     .attr("transform", `translate(0, ${topOffset})`)
     .style("user-select", "none")
     .call(d3.axisTop(x));
-svg.append("text")
-    .attr("y", 2)
-    .attr("x", 0)
-    .attr("text-anchor", "middle")
-    .text("F2");
-
-// Add Y axis
 const y = d3.scaleLinear()
     .domain([860, 175])
     .range([height, topOffset]);
-svg.append("g")
+axes.append("g")
     .attr("transform", `translate(${width - rightOffset}, 0)`)
     .style("user-select", "none")
     .call(d3.axisRight(y));
 
-svg.append("text")
-    .attr("y", height)
-    .attr("x", width)
-    .attr("text-anchor", "middle")
-    .text("F1");
-
+// vowel synthesis playback
 svg.append("rect")
     .attr("x", 0)
     .attr("y", 0)
@@ -65,7 +52,6 @@ svg.append("rect")
     .attr("height", height)
     .style("fill", "transparent")
     .style("z-index", "1")
-    // .style("cursor", "pointer")
     .on("mousedown", function (e) {
         let f1 = y.invert(d3.pointer(e)[1]);
         let f2 = x.invert(d3.pointer(e)[0]);
@@ -93,12 +79,13 @@ d3.tsv("formants.tsv").then(function (data) {
         process["F2"] = +d["F2"];
         process["F3"] = +d["F3"];
         d["rounded"] = d["filename"].includes("_rounded");
+        d["show"] = d["filename"] !== "hidden.ogg.mp3";
         vowelData[d.symbol] = process;
     });
     console.log('vowel formants:', data);
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
-    let frontier = ["i", "e", "ɛ", "æ", "a", "ɑ", "ɒ", "ɔ", "o", "u"];
+    let frontier = ["i", "e", "ɛ", "æ", "a", "ä", "ɑ", "ɒ", "ɔ", "o", "u"];
     let vertices = frontier.map(d => [x(vowelData[d].F2), y(vowelData[d].F1)]);
 
     const curve = d3.line().curve(d3.curveMonotoneX);
@@ -110,13 +97,14 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr('fill', 'none')
         .attr('stroke-dasharray', '5,5')
         .style("pointer-events", "none")
+        // .style("user-select", "none")
         .style("z-index", "-99");
 
     // begin data points
     let gs = svg.append('g')
         .attr("id", "svg-vowels")
         .selectAll("text")
-        .data(Object.values(vowelData))
+        .data(Object.values(vowelData).filter(d => d.show))
         .enter()
         .append("g");
 
@@ -152,8 +140,15 @@ d3.tsv("formants.tsv").then(function (data) {
             }
             // stop propagation
         })
-        .on("mouseup", function () {
-            stopVowel();
+        // allow the mouse dragged over a circle to still have formants continuously updated
+        // most noticable is with ä
+        .on("mousemove", function (e) {
+            let f1 = y.invert(d3.pointer(e)[1]);
+            let f2 = x.invert(d3.pointer(e)[0]);
+            // console.log(f1, f2);
+            if (e.buttons === 1) {
+                changeVowel({ F1: f1, F2: f2 });
+            }
         });
 
 
@@ -166,15 +161,23 @@ d3.tsv("formants.tsv").then(function (data) {
         let player = new DiphthongScheduler(diph[0], diph[1]);
 
         // visible diphthongs
+        let start = [x(diph[0].F2), y(diph[0].F1)] as [number, number];
+        let end = [x(diph[1].F2), y(diph[1].F1)] as [number, number];
+        // let percent = .92;
+        let end_adjusted = end;
+        // [percent * end[0] + (1 - percent) * start[0], 
+        //     percent * end[1] + (1 - percent) * start[1]] as [number, number];
         diphGroup.append("path")
-            .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
+            .attr("d", curve([start, end_adjusted]))
             .classed("diph-paths", true)
             .attr('stroke', '#3b3bb3')
+            .attr('stroke-dasharray', '10,10')
+            .attr("marker-end", "url(#diph-arrowhead)")
             .attr('stroke-opacity', 0); // animated
 
         // clickable diphthongs
         diphGroup.append("path")
-            .attr("d", curve([[x(diph[0].F2), y(diph[0].F1)], [x(diph[1].F2), y(diph[1].F1)]]))
+            .attr("d", curve([start, end_adjusted]))
             .classed("diph-bounds", true)
             .style("display", "none") // animated
             .attr('stroke', 'white') // this just needs to be here
@@ -188,7 +191,6 @@ d3.tsv("formants.tsv").then(function (data) {
     }
 }).then(() => {
     loadLexicalSets(svg, vowelData, x, y);
-
     
 });
 
