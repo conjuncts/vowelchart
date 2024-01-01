@@ -1,6 +1,8 @@
 
 import * as d3 from 'd3';
-import { Vowel } from './vowels';
+import { AdjustedPosition, Diphthong, MixedVowel, Vowel, isPositionedVowel, isVowel } from './vowels';
+import { LexicalSet, lexsetData } from './lexsets';
+import { positionDiphText } from './positioning';
 
 export enum Tab {
     HOME = 1,
@@ -54,13 +56,13 @@ export function toggleDiphthongs(enable?: boolean) {
     let bounds = document.querySelectorAll(".diph-bounds") as unknown as SVGCircleElement[];
     for (let bound of bounds) {
         if (enable) {
-            bound.style.removeProperty("display");
+            bound.classList.remove("hidden");
         } else {
-            bound.style.display = "none";
+            bound.classList.add("hidden");
         }
     }
     // animate the paths
-    d3.selectAll(".diph-paths")
+    d3.selectAll(".lex-path")
         .transition()
         .duration(200)
         .attr('stroke-opacity', enable ? 0.5 : 0);
@@ -171,4 +173,121 @@ function recalculateActiveTab() {
         tab = Tab.MERGERS;
     }
     return tab;
+}
+
+
+export function toggleRP(enable?: boolean) {
+    if (enable === undefined) {
+        enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
+    }
+    function* yieldValues(): Generator<[LexicalSet, MixedVowel, MixedVowel],
+        void, unknown> {
+        for (let lexset of lexsetData.values()) {
+            let pos;
+            let was;
+            if (enable) {
+                pos = lexset.RP[0];
+                was = lexset.GA[0];
+            } else {
+                pos = lexset.GA[0];
+                was = lexset.RP[0];
+            }
+            if (pos instanceof Diphthong) {
+                yield [lexset, pos, was] as [LexicalSet, Diphthong, MixedVowel];
+                continue;
+            } else if (isVowel(pos) && isPositionedVowel(pos)) {
+                yield [lexset, pos, was] as [LexicalSet, Vowel & AdjustedPosition, MixedVowel];
+
+            }
+
+        }
+    }
+    for (let [lexset, pos, was] of yieldValues()) {
+        let node = d3.select(`.lex-${lexset.name}`);
+
+        if (pos instanceof Diphthong) {
+            if (was instanceof Diphthong) {
+                // diph to diph
+                if (pos.start === was.start && pos.end === was.end) {
+                    console.log("skipping");
+                    continue;
+                }
+            } else {
+                // mono to diph
+                // animate the path
+                let start = [pos.start.x, pos.start.y] as [number, number];
+                let end = [pos.end.x, pos.end.y] as [number, number];
+                let path = node.select(".lex-path")
+                    .transition()
+                    .duration(500)
+                    .attr('d', d3.line()([start, end]))
+                    .attr('stroke-opacity', 0.5)
+                    .attr("marker-end", lexset.rhotic ?
+                        "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+                
+                // animate the text
+                let [rotation, midpoint] = positionDiphText(pos);
+
+                let txt = node.select(".lex-text")
+                    .classed("lex-diph-text", true)
+                    .classed("lex-text", false);
+                if (lexset.name === "CURE") {
+                    txt.attr('transform',
+                        `rotate(${rotation}, ${was.x}, ${was.y})`); // animation is broken
+                }
+                let trans = txt.transition()
+                    .duration(300);
+                trans.attr("x", midpoint[0])
+                    .attr("y", midpoint[1])
+                    .attr('transform',
+                        `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
+                    .style("opacity", "1");
+            }
+        } else {
+            // monophthong            
+            if (was instanceof Diphthong) {
+                // diph to mono
+                let start = [pos.x, pos.y] as [number, number];
+                node.select(".lex-path")
+                    .transition()
+                    .duration(500)
+                    .attr('d', d3.line()([start, start]))
+                    .attr('stroke-opacity', 0)
+                    .attr("marker-end", null);
+                
+                // animate the text
+
+                let txt = node.select(".lex-diph-text");
+                if (lexset.name === "CURE") {
+                    txt.attr('transform',
+                        `rotate(0)`);
+                }
+                txt.classed("lex-diph-text", false)
+                    .classed("lex-text", true)
+                    .transition()
+                    .duration(300)
+                    .attr("x", pos.x)
+                    .attr("y", pos.y)
+                    .attr('transform',
+                        `translate(${pos.dx + 5}, ${pos.dy + 10}) rotate(0, ${pos.x}, ${pos.y})`);
+                continue;
+            }
+            // mono to mono
+            node.select(".lex-text")
+                .transition()
+                .duration(300)
+                .attr("x", pos.x)
+                .attr("y", pos.y)
+                .attr('transform',
+                    `translate(${pos.dx + 5}, ${pos.dy + 10})`);
+
+            // plot circles
+            node.select(".lex-circle")
+                .transition()
+                .duration(200)
+                .attr("cx", pos.x)
+                .attr("cy", pos.y);
+        }
+    }
+
 }

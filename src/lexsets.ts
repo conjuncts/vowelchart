@@ -1,5 +1,7 @@
 import * as d3 from 'd3';
-import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, AdjustedPosition, isPositionedVowel, isVowel, MixedVowel } from './vowels';
+import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, AdjustedPosition, PositionedVowel } from './vowels';
+import { DiphthongScheduler } from './synthesis';
+import { positionDiphText } from './positioning';
 
 export class LexicalSet {
     name: string;
@@ -27,7 +29,7 @@ export let lexsetData: Map<string, LexicalSet> = new Map();
 // let lexsetPositions: Map<string, PositionedVowel> = new Map();
 
 export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
-    formantData: Record<string, Vowel>,
+    formantData: Record<string, PositionedVowel>,
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>) {
 
@@ -75,128 +77,99 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         let gs = svg.insert('g', ":first-child")
             .attr("id", "svg-lex");
 
+        const curve = d3.line();
+        
+        let diphGroup = d3.select("#svg-diphs");
         for(let lexset of lexsetData.values()) {
-            if(!isVowel(lexset.GA[0]) || !isPositionedVowel(lexset.GA[0])) {
-                continue;
-            }
-            let pos = lexset.GA[0] as Vowel & AdjustedPosition;
             let node = gs.append("g")
                 .classed(`lex-${lexset.name}`, true);
-            node.append("text")
-                .classed("lex-text", true)
-                .attr("x", pos.x)
-                .attr("y", pos.y)
-                .attr('transform', 
-                    `translate(${pos.dx + 5}, ${pos.dy + 10})`) 
-                .style("opacity", "0") // animated
-                .text(lexset.name)
-                .classed("lex-rhotic", lexset.rhotic!);
+            
+            // path, which for monophthongs is just a dot
+            let path = node.append("path")
+                .classed("lex-path", true)
+                .attr('stroke', lexset.rhotic ? 'darkorchid' : '#3b3bb3')
+                .attr('stroke-dasharray', '10,10');
+            let ele = lexset.GA[0];
+            let diph = ele instanceof Diphthong ? ele : undefined;
+            let pos = diph ? undefined : ele as Vowel & AdjustedPosition;
+            
+            if(!(diph || pos)) {
+                console.log("neither diph nor pos", lexset.name);
+                continue;
+            }
+            
+            // visible
+            let start;
+            let end;
+            if(diph) {
+                start = [x(diph.start.F2), y(diph.start.F1)] as [number, number];
+                end = [x(diph.end.F2), y(diph.end.F1)] as [number, number];
+                path.attr("marker-end", lexset.rhotic ?
+                    "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+            } else if(pos) {
+                start = end = [x(pos.F2), y(pos.F1)] as [number, number];
+                // plot circles for monophthongs
+                node.append("circle")
+                    .classed("lex-circle", true)
+                    .attr("cx", pos.x)
+                    .attr("cy", pos.y)
+                    .attr("r", 0) // animated
+                    .style("fill", "#69b3a222")
+                    .attr("alt", lexset.name);
+            } else {
+                continue;
+            }
+            path.attr('stroke-opacity', diph ? 0.5 : 0) // animated
+                .attr("d", curve([start, end]));
+            
+            // text
+            if(diph) {
+                let [rotation, midpoint] = positionDiphText(diph);
+                node.append("text")
+                    .classed("lex-diph-text", true)
+                    .attr("x", midpoint[0])
+                    .attr("y", midpoint[1])
+                    .attr("transform",
+                        `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
+                    .style("opacity", "0") // animated
+                    .text(lexset.name);
+            } else if (pos) {
+                path.attr("d", curve([start, start]));
+                node.append("text")
+                    .classed("lex-text", true)
+                    .attr("x", pos.x)
+                    .attr("y", pos.y)
+                    .attr('transform',
+                        `translate(${pos.dx + 5}, ${pos.dy + 10})`)
+                    .style("opacity", "0") // animated
+                    .text(lexset.name)
+                    .classed("lex-rhotic", lexset.rhotic!);
+            }
             // the circle and text have the same x/y, but the text just has an offset
 
-            // plot circles
-            node.append("circle")
-                .classed("lex-circle", true)
-                .attr("cx", pos.x)
-                .attr("cy", pos.y)
-                .attr("r", 0) // animated
-
-                .style("fill", "#69b3a222")
-                .attr("alt", lexset.name);
-                // .classed("lex-rhotic", lexset.rhotic!);
+            // clickable diphthongs
+            if (diph) {
+                let player = new DiphthongScheduler(diph.start, diph.end);
+                console.log("fff");
+                diphGroup.append("path")
+                    .attr("d", curve([start, end]))
+                    .classed("diph-bounds", true) 
+                    // hidden - animated
+                    .attr('stroke', 'white') // this just needs to be here
+                    .attr('stroke-opacity', 0)
+                    .attr('stroke-width', 10)
+                    .style("cursor", "pointer")
+                    .on("click", function () {
+                        player.play();
+                    });
+                    
+                // bounds
+                if (!diph.end) continue;
+                //     .attr('stroke', '#69b3a222')
+                //     .attr('stroke-linecap', 'round')
+            }
         }
 
         // diphthongs
-        const curve = d3.line();
-
-        let diphs = svg.insert('g', ":first-child").attr("id", "svg-lex-diphs");
-        for(let lexset of lexsetData.values()) {
-            if(!(lexset.GA[0] instanceof Diphthong)) {
-                continue;
-            }
-            let diph = lexset.GA[0] as Diphthong;
-            // console.log("diph: ", diph);
-
-            // bounds
-            if(!diph.end) continue;
-            // diphs.append("path")
-            //     .attr("d", curve([[x(diph.start.F2), y(diph.start.F1)], [x(diph.end.F2), y(diph.end.F1)]]))
-            //     // arrowhead
-            //     .classed("lex-diph-bounds", true)
-            //     .attr('stroke-width', 0) // no longer animated
-            //     .attr('stroke', '#69b3a222')
-            //     .attr('stroke-linecap', 'round')
-            //     .attr('fill', 'none')
-            //     .style("pointer-events", "none")
-            
-            let dy = y(diph.end.F1) - y(diph.start.F1);
-            let dx = x(diph.end.F2) - x(diph.start.F2);
-            let midpoint = [x(diph.start.F2) +dx/3, y(diph.start.F1) + dy/ 3];
-            // 1/3 point has fewer collision
-            let rotation = Math.atan2(dy, 
-                dx) * 180 / Math.PI;
-
-            if(-270 <= rotation && rotation <= -90) {
-                rotation += 180;
-            }
-            // text
-            diphs.append("text")
-                .classed("lex-diph-text", true)
-                .attr("transform", 
-                    `translate(${midpoint[0]}, ${midpoint[1]}) rotate(${rotation})`)
-                .style("opacity", "0") // animated
-                .text(lexset.name);
-        }
     });
-}
-
-export function toggleRP(enable?: boolean) {
-    if (enable === undefined) {
-        enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
-    }
-    function* yieldValues(): Generator<[LexicalSet, MixedVowel, MixedVowel], 
-                void, unknown> {
-        for (let lexset of lexsetData.values()) {
-            let pos;
-            let was;
-            if(enable) {
-                pos = lexset.RP[0];
-                was = lexset.GA[0];
-            } else {
-                pos = lexset.GA[0];
-                was = lexset.RP[0];
-            }
-            if (pos instanceof Diphthong) {
-                yield [lexset, pos, was] as [LexicalSet, Diphthong, MixedVowel];
-                continue;
-            } else if (isVowel(pos) && isPositionedVowel(pos)) {
-                yield [lexset, pos, was] as [LexicalSet, Vowel & AdjustedPosition, MixedVowel];
-                
-            }
-            
-        }
-    }
-    for (let [lexset, pos] of yieldValues()) {
-        let node = d3.select(`.lex-${lexset.name}`);
-        
-        if(pos instanceof Diphthong) {
-            
-        } else {
-            // monophthong
-            node.select(".lex-text")
-                .transition()
-                .duration(300)
-                .attr("x", pos.x)
-                .attr("y", pos.y)
-                .attr('transform',
-                    `translate(${pos.dx + 5}, ${pos.dy + 10})`);
-
-            // plot circles
-            node.select(".lex-circle")
-                .transition()
-                .duration(200)
-                .attr("cx", pos.x)
-                .attr("cy", pos.y);
-        }
-    }
-
 }

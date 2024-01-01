@@ -2,9 +2,9 @@
 
 import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
-import { toggleReferenceRecordings, toggleDiphthongs, hydrateTabs } from './tabs';
-import { loadLexicalSets, toggleRP } from './lexsets';
-import { diphs, Vowel } from './vowels';
+import { toggleReferenceRecordings, toggleDiphthongs, toggleRP, hydrateTabs } from './tabs';
+import { loadLexicalSets } from './lexsets';
+import { diphs, PositionedVowel, positionVowel, Vowel } from './vowels';
 (window as any).toggleReferenceRecordings = toggleReferenceRecordings;
 (window as any).toggleDiphthongs = toggleDiphthongs;
 (window as any).toggleRP = toggleRP;
@@ -69,7 +69,7 @@ svg.append("rect")
 
 
 // Read the data
-let vowelData: Record<string, Vowel> = {};
+let vowelData: Record<string, PositionedVowel> = {};
 
 d3.tsv("formants.tsv").then(function (data) {
     // put data
@@ -80,9 +80,9 @@ d3.tsv("formants.tsv").then(function (data) {
         process["F3"] = +d["F3"];
         d["rounded"] = d["filename"].includes("_rounded");
         d["show"] = d["filename"] !== "hidden.ogg.mp3";
-        vowelData[d.symbol] = process;
+        vowelData[d.symbol] = positionVowel(process, x, y, []);
     });
-    console.log('vowel formants:', data);
+    console.log('vowel formants:', vowelData);
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
     let frontier = ["i", "e", "ɛ", "æ", "a", "ä", "ɑ", "ɒ", "ɔ", "o", "u"];
@@ -156,6 +156,7 @@ d3.tsv("formants.tsv").then(function (data) {
         
     let diphGroup = svg.insert("g", "#svg-vowels").attr("id", "svg-diphs");
     for (let diphstr of diphs) {
+        continue;
         let diph = diphstr.map(s => vowelData[s]);
 
         let player = new DiphthongScheduler(diph[0], diph[1]);
@@ -163,17 +164,17 @@ d3.tsv("formants.tsv").then(function (data) {
         // visible diphthongs
         let start = [x(diph[0].F2), y(diph[0].F1)] as [number, number];
         let end = [x(diph[1].F2), y(diph[1].F1)] as [number, number];
-        // let percent = .92;
+        // // let percent = .92;
         let end_adjusted = end;
-        // [percent * end[0] + (1 - percent) * start[0], 
-        //     percent * end[1] + (1 - percent) * start[1]] as [number, number];
-        diphGroup.append("path")
-            .attr("d", curve([start, end_adjusted]))
-            .classed("diph-paths", true)
-            .attr('stroke', '#3b3bb3')
-            .attr('stroke-dasharray', '10,10')
-            .attr("marker-end", "url(#diph-arrowhead)")
-            .attr('stroke-opacity', 0); // animated
+        // // [percent * end[0] + (1 - percent) * start[0], 
+        // //     percent * end[1] + (1 - percent) * start[1]] as [number, number];
+        // diphGroup.append("path")
+        //     .attr("d", curve([start, end_adjusted]))
+        //     .classed("lex-path", true)
+        //     .attr('stroke', '#3b3bb3')
+        //     .attr('stroke-dasharray', '10,10')
+        //     .attr("marker-end", "url(#diph-arrowhead)")
+        //     .attr('stroke-opacity', 0); // animated
 
         // clickable diphthongs
         diphGroup.append("path")

@@ -1,3 +1,9 @@
+export interface AdjustedPosition extends Vowel {
+    x: number;
+    y: number;
+    dx: number;
+    dy: number;
+}
 export class Vowel {
     filename: string;
     symbol: string;
@@ -16,6 +22,7 @@ export class Vowel {
         this.show = filename !== 'hidden.ogg.mp3';
     }
 }
+export type PositionedVowel = (Vowel & AdjustedPosition);
 
 export function isVowel(x: any): x is Vowel {
     return x.filename !== undefined && x.symbol !== undefined && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined;
@@ -23,9 +30,9 @@ export function isVowel(x: any): x is Vowel {
 
 export class Diphthong {
     symbols: string;
-    start: Vowel;
-    end: Vowel;
-    constructor(start: Vowel, end: Vowel, symbols?: string) {
+    start: PositionedVowel;
+    end: PositionedVowel;
+    constructor(start: PositionedVowel, end: PositionedVowel, symbols?: string) {
         this.symbols =  (!symbols ? '' + start.symbol + end.symbol : symbols);
         this.start = start;
         this.end = end;
@@ -51,7 +58,7 @@ export class SuffixedVowel extends Vowel {
 
 
 
-export function vowelFromString(s: string, formantData: Record<string, Vowel>): Vowel | Diphthong | undefined {
+export function vowelFromString(s: string, formantData: Record<string, PositionedVowel>): Vowel | Diphthong | undefined {
     if (s.length === 1) {
         return formantData[s]; // monophthong
     }
@@ -87,17 +94,12 @@ o ʊ̝`.split("\n").map((x) => x.split(' '));
 // ä j
 // ʊ
 
-export interface AdjustedPosition extends Vowel {
-    x: number;
-    y: number;
-    dx: number;
-    dy: number;
-}
+
 
 export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>,
-    checkCollisionsWith: Iterable<AdjustedPosition>): T & AdjustedPosition {
+    checkCollisionsWith: Iterable<AdjustedPosition>): T & AdjustedPosition{
 
 
     let atx = x(vowel.F2);
@@ -126,5 +128,5 @@ export function isPositionedVowel(x: any): x is AdjustedPosition {
     return x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
 }
 
-export type PositionedVowel = (Vowel & AdjustedPosition);
+
 export type MixedVowel = PositionedVowel | Diphthong;
