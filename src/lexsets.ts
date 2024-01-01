@@ -126,6 +126,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if(diph) {
                 let [rotation, midpoint] = positionDiphText(diph);
                 node.append("text")
+                    .classed("lex-text", true)
                     .classed("lex-diph-text", true)
                     .attr("x", midpoint[0])
                     .attr("y", midpoint[1])
@@ -150,7 +151,6 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             // clickable diphthongs
             if (diph) {
                 let player = new DiphthongScheduler(diph.start, diph.end);
-                console.log("fff");
                 diphGroup.append("path")
                     .attr("d", curve([start, end]))
                     .classed("diph-bounds", true) 
