@@ -240,6 +240,11 @@ input[type=radio] {
   transition: color 0.15s ease-in;
 }
 
+.tab.blocked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .notification {
   display: flex;
   align-items: center;

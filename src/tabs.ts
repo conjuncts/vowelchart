@@ -1,8 +1,10 @@
 
 import * as d3 from 'd3';
-import { Diphthong, Vowel, isPositionedVowel, isVowel } from './vowels';
+import { Diphthong, PositionedVowel, Vowel, VowelPositionState, isPositionedVowel, isVowel } from './vowels';
 import { lexsetData } from './lexsets';
-import { createDiphthongPlayer, positionLexset } from './positioning';
+import { positionLexset, repositionVowels } from './positioning';
+import { vowelData, x as position_x, y as position_y, d3gs } from './main';
+import { DiphthongScheduler } from './synthesis';
 
 export enum Tab {
     HOME = 1,
@@ -10,8 +12,18 @@ export enum Tab {
     GVS = 3,
     MERGERS = 4
 }
-
-export function toggle(key: string, enable: boolean) {
+function enableTab(tab: Tab, enable: boolean) {
+    let inp = document.getElementById(`radio-${tab}`) as HTMLInputElement;
+    let label = inp.nextElementSibling as HTMLLabelElement;
+    inp.disabled = !enable;
+    if(enable) {
+        label.classList.remove("blocked");
+    } else {
+        label.classList.add("blocked");
+    }
+    return label;
+}
+export function toggle(key: string, enable?: boolean) {
     switch (key) {
         case 'diphthongs':
             toggleDiphthongs(enable);
@@ -19,12 +31,18 @@ export function toggle(key: string, enable: boolean) {
         case 'referenceRecordings':
             toggleReferenceRecordings(enable);
             break;
+        case 'RP':
+            toggleRP(enable);
+            break;
+        case 'trapezoid':
+            toggleTrapezoid(enable);
+            break;
         default:
             console.error("Unknown toggle key: " + key);
     }
 }
 
-export function toggleReferenceRecordings(enable?: boolean) {
+function toggleReferenceRecordings(enable?: boolean) {
     if(enable === undefined) {
         
         enable = (document.getElementById('play-reference') as HTMLInputElement).checked;
@@ -48,7 +66,7 @@ function isLexsetMode(tab?: Tab) {
     }
     return tab !== Tab.HOME;
 }
-export function toggleDiphthongs(enable?: boolean) {
+function toggleDiphthongs(enable?: boolean) {
     if (enable === undefined) {
         enable = isDiphsChecked();
     }
@@ -75,7 +93,7 @@ export function toggleDiphthongs(enable?: boolean) {
     }
 }
 
-export function toggleLexsets(enable?: boolean) {
+function toggleLexsets(enable?: boolean) {
     if (enable === undefined) {
         enable = isLexsetMode();
     }
@@ -83,12 +101,25 @@ export function toggleLexsets(enable?: boolean) {
     d3.selectAll('.lex-circle').transition()
         .duration(200)
         .attr("r", enable ? 20 : 0);
+        
+    // toggle lexset text
     // if diphs are enabled, we need to toggle the diphs
     // if not, we must exclude the diphs
     let selector = isDiphsChecked() ? '.lex-text' : '.lex-text:not(.lex-diph-text)';
-    d3.selectAll(selector).transition()
+    let x = d3.selectAll(selector);
+    if(enable) {
+        x.classed("hidden", false);
+    }
+    let y = x.transition()
         .duration(200)
         .style("opacity", enable ? "1" : "0");
+    if(!enable) {
+        y.on("end", function () {
+            d3.select(this).classed("hidden", true);
+        });
+    }
+    
+    // toggle vowel text
     if (enable) {
         setTimeout(() => {
             d3.selectAll(".vowel-text").style("fill", "#A9A9A9");
@@ -108,7 +139,7 @@ export function toggleLexsets(enable?: boolean) {
     }
 }
 
-export function toggleLexsetDiphs(enable: boolean) {
+function toggleLexsetDiphs(enable: boolean) {
     // isDiphsChecked AND LexsetMode on
     // d3.selectAll(".lex-diph-bounds")
     //     .transition()
@@ -177,7 +208,7 @@ export function recalculateActiveTab() {
 
 let RP_diphs = false;
 
-export function toggleRP(enable?: boolean) {
+function toggleRP(enable?: boolean) {
     if (enable === undefined) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
@@ -193,10 +224,22 @@ export function toggleRP(enable?: boolean) {
         }
         if (pos instanceof Diphthong || (isVowel(pos) && isPositionedVowel(pos))) {
             if(was instanceof Diphthong || (isVowel(was) && isPositionedVowel(was))) {
-                positionLexset(lexset, pos, was);
+                let node = positionLexset(lexset, pos, was);
                 if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
-                    createDiphthongPlayer(pos)
+                    let player = new DiphthongScheduler(pos.start, pos.end);
+                    node.append("path")
+                        .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
+                        .classed("diph-bounds", true)
+                        // hidden - animated
+                        .attr('stroke', 'white') // this just needs to be here
+                        .attr('stroke-opacity', 0)
+                        .attr('stroke-width', 10)
+                        .style("cursor", "pointer")
+                        .on("click", function () {
+                            player.play();
+                        })
                         .classed("RP-diph-bounds", true);
+                    node.classed("lex-diph", true);
                 }
             }
         }
@@ -205,4 +248,53 @@ export function toggleRP(enable?: boolean) {
     d3.selectAll(".RP-diph-bounds")
         .classed("hidden", !enable);
 
+}
+function toggleTrapezoid(enable?: boolean) {
+    if(!enable) enable = (document.getElementById('toggle-trapezoid') as HTMLInputElement).checked;
+    if(enable) {
+        // reposition all vowels
+        for(let vowel of Object.values(vowelData)) {
+            if(isPositionedVowel(vowel)) {
+                // bottom distance: 493px :: 370.93 -- about 50%
+                // top distance: 979px :: 736.6
+                // vertical distance: 731px :: 550.
+                
+                let y = 250 + (vowel.openness / 6) * (800 - 250);
+                let x = 600 + (vowel.frontness / 4) * (2400 - 600) * (1 - 1/2 * vowel.openness / 6);
+                
+                x += (vowel.rounded ? -20 : 20);
+                
+                vowel.x = position_x(x);
+                vowel.y = position_y(y);
+                
+                // vowel.x = vowel.xTrapezoid;
+                // vowel.y = vowel.yTrapezoid;
+            }
+        }
+        repositionVowels(d3gs, VowelPositionState.TRAPEZOID);
+        
+        // take away the frontier
+        d3.selectAll("#frontier").classed("hidden", true);
+        
+        let label = enableTab(Tab.LEXSETS, false);
+        
+        label.title = "Lexical sets are not yet supported in trapezoid view";
+
+        
+    } else {
+        for(let vowel of Object.values(vowelData)) {
+            if(isPositionedVowel(vowel)) {
+                vowel.x = position_x(vowel.F2);
+                vowel.y = position_y(vowel.F1);
+            }
+        }
+        repositionVowels(d3gs, VowelPositionState.FORMANT);
+        
+        // bring back the frontier
+        d3.selectAll("#frontier").classed("hidden", false);
+
+        let label = enableTab(Tab.LEXSETS, true);
+        label.title = "";
+
+    }
 }

@@ -2,12 +2,10 @@
 
 import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
-import { toggleReferenceRecordings, toggleDiphthongs, toggleRP, hydrateTabs } from './tabs';
+import { toggle, hydrateTabs } from './tabs';
 import { loadLexicalSets } from './lexsets';
 import { diphs, PositionedVowel, positionVowel, Vowel } from './vowels';
-(window as any).toggleReferenceRecordings = toggleReferenceRecordings;
-(window as any).toggleDiphthongs = toggleDiphthongs;
-(window as any).toggleRP = toggleRP;
+(window as any).toggle = toggle;
 
 hydrateTabs();
 
@@ -29,14 +27,14 @@ let topOffset = 20;
 let rightOffset = 40;
 // Axes
 let axes = svg.select("#axes");
-const x = d3.scaleLinear()
+export const x = d3.scaleLinear()
     .domain([2500, 500])
     .range([0, width - rightOffset]);
 axes.append("g")
     .attr("transform", `translate(0, ${topOffset})`)
     .style("user-select", "none")
     .call(d3.axisTop(x));
-const y = d3.scaleLinear()
+export const y = d3.scaleLinear()
     .domain([860, 175])
     .range([height, topOffset]);
 axes.append("g")
@@ -69,29 +67,34 @@ svg.append("rect")
 
 
 // Read the data
-let vowelData: Record<string, PositionedVowel> = {};
+export let vowelData: Record<string, PositionedVowel> = {};
+
+export let d3gs: d3.Selection<SVGGElement, PositionedVowel, SVGGElement, unknown>;
 
 d3.tsv("formants.tsv").then(function (data) {
     // put data
     data.forEach((d: any) => {
-        let process = d;
-        process["F1"] = +d["F1"];
-        process["F2"] = +d["F2"];
-        process["F3"] = +d["F3"];
-        d["rounded"] = d["filename"].includes("_rounded");
-        d["show"] = d["filename"] !== "hidden.ogg.mp3";
-        vowelData[d.symbol] = positionVowel(process, x, y, []);
+        // // let process = d;
+        // // process["F1"] = +d["F1"];
+        // // process["F2"] = +d["F2"];
+        // // process["F3"] = +d["F3"];
+        // // d["rounded"] = d["filename"].includes("_rounded");
+        // // d["show"] = d["filename"] !== "hidden.ogg.mp3";
+        // vowelData[d.symbol] = positionVowel(process, x, y, []);
+        let v = new Vowel(d.filename, d.symbol, +d.F1, +d.F2, +d.F3);
+        vowelData[v.symbol] = positionVowel(v, x, y, []);
     });
     console.log('vowel formants:', vowelData);
 
     // add dotted line edges between these vowels: i, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, u to signify frontier
     let frontier = ["i", "e", "ɛ", "æ", "a", "ä", "ɑ", "ɒ", "ɔ", "o", "u"];
-    let vertices = frontier.map(d => [x(vowelData[d].F2), y(vowelData[d].F1)]);
+    let vertices = frontier.map(d => [vowelData[d].x, vowelData[d].y]);
 
     const curve = d3.line().curve(d3.curveMonotoneX);
 
     // dotted lines
     svg.append('path')
+        .attr('id', 'frontier')
         .attr('d', curve(vertices as any))
         .attr('stroke', 'black')
         .attr('fill', 'none')
@@ -101,7 +104,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .style("z-index", "-99");
 
     // begin data points
-    let gs = svg.append('g')
+    let gs = d3gs = svg.append('g')
         .attr("id", "svg-vowels")
         .selectAll("text")
         .data(Object.values(vowelData).filter(d => d.show))
@@ -110,15 +113,16 @@ d3.tsv("formants.tsv").then(function (data) {
 
     gs.append("text")
         .classed("vowel-text", true)
-        .attr("x", d => x(d.F2 as any) + 5)
-        .attr("y", d => y(d.F1 as any) - 5)
+        .attr("x", d => d.x + 5)
+        .attr("y", d => d.y - 5)
         .style("fill", d => d.rounded ? "blue" : "black") // no longer animated
         .text(d => { return d.symbol });
 
     // visible vowels
     gs.append("circle")
-        .attr("cx", function (d) { return x(d.F2 as any); })
-        .attr("cy", function (d) { return y(d.F1 as any); })
+        .classed("vowel-circle", true)
+        .attr("cx", function (d) { return d.x; })
+        .attr("cy", function (d) { return d.y; })
         .attr("r", 5)
         .style("pointer-events", "none")
         .style("fill", "#69b3a2")
@@ -127,8 +131,8 @@ d3.tsv("formants.tsv").then(function (data) {
     // clickable vowels
     gs.append("circle") 
         .classed("vowel-bounds", true)
-        .attr("cx", function (d) { return x(d.F2 as any); })
-        .attr("cy", function (d) { return y(d.F1 as any); })
+        .attr("cx", function (d) { return d.x; })
+        .attr("cy", function (d) { return d.y; })
         .attr("r", 8)
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
@@ -162,8 +166,8 @@ d3.tsv("formants.tsv").then(function (data) {
         let player = new DiphthongScheduler(diph[0], diph[1]);
 
         // visible diphthongs
-        let start = [x(diph[0].F2), y(diph[0].F1)] as [number, number];
-        let end = [x(diph[1].F2), y(diph[1].F1)] as [number, number];
+        let start = [diph[0].x, diph[0].y] as [number, number];
+        let end = [diph[1].x, diph[1].y] as [number, number];
         // // let percent = .92;
         let end_adjusted = end;
         // // [percent * end[0] + (1 - percent) * start[0], 

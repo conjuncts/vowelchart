@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
-import { LexicalSet } from "./lexsets";
-import { Diphthong, MixedVowel } from "./vowels";
+import { LexicalSet, lexsetData } from "./lexsets";
+import { Diphthong, MixedVowel, PositionedVowel, VowelPositionState, isPositionedVowel } from "./vowels";
 import { DiphthongScheduler } from './synthesis';
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
@@ -18,7 +18,9 @@ export function positionDiphText(diph: Diphthong): [number, [number, number]] {
 
 }
 
-export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedVowel) {
+
+export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedVowel): 
+    d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
     let node = d3.select(`.lex-${lexset.name}`);
 
     if (pos instanceof Diphthong) {
@@ -26,44 +28,51 @@ export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedV
             // diph to diph
             if (pos.start === was.start && pos.end === was.end) {
                 // console.log("skipping");
-                return;
+                return node;
             }
-        } else {
-            // mono to diph
-            // animate the path
-            let start = [pos.start.x, pos.start.y] as [number, number];
-            let end = [pos.end.x, pos.end.y] as [number, number];
-            node.select(".lex-path")
-                .transition()
-                .duration(500)
-                .attr('d', d3.line()([start, end]))
-                .attr('stroke-opacity', 0.5)
-                .attr("marker-end", lexset.rhotic ?
-                    "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
-
-            // animate the text
-            let [rotation, midpoint] = positionDiphText(pos);
-
-            let txt = node.select(".lex-text")
-                .classed("lex-diph-text", true);
-            if (lexset.name === "CURE") {
-                txt.attr('transform',
-                    `rotate(${rotation}, ${was!.x}, ${was!.y})`); // animation is broken
-            }
-            let trans = txt.transition()
-                .duration(300);
-            trans.attr("x", midpoint[0])
-                .attr("y", midpoint[1])
-                .attr('transform',
-                    `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
-                .style("opacity", "1");
-            
-            // clean up old
-            node.select(".lex-circle")
-                .transition()
-                .duration(300)
-                .attr("r", 0);
         }
+        // undefined, mono, or diph to diph
+        // animate the path
+        let start = [pos.start.x, pos.start.y] as [number, number];
+        let end = [pos.end.x, pos.end.y] as [number, number];
+        node.select(".lex-path")
+            .transition()
+            .duration(500)
+            .attr('d', d3.line()([start, end]))
+            .attr('stroke-opacity', 0.5)
+            .attr("marker-end", lexset.rhotic ?
+                "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+        
+        // animate the bound
+        node.select(".diph-bounds")
+            .transition()
+            .duration(500)
+            .attr('d', d3.line()([start, end]));
+        
+        
+        // animate the text
+        let [rotation, midpoint] = positionDiphText(pos);
+
+        let txt = node.select(".lex-text")
+            .classed("lex-diph-text", true);
+        if (lexset.name === "CURE" && isPositionedVowel(was)) {
+            txt.attr('transform',
+                `rotate(${rotation}, ${was.x}, ${was.y})`); // animation is broken
+        }
+        let trans = txt.transition()
+            .duration(300);
+        trans.attr("x", midpoint[0])
+            .attr("y", midpoint[1])
+            .attr('transform',
+                `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
+            .style("opacity", "1");
+        
+        // clean up old
+        node.select(".lex-circle")
+            .transition()
+            .duration(300)
+            .attr("r", 0);
+        
     } else {
         // monophthong            
         if (was instanceof Diphthong) {
@@ -95,7 +104,7 @@ export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedV
                 .attr("y", pos.y)
                 .attr('transform',
                     `translate(${pos.dx + 5}, ${pos.dy + 10}) rotate(0, ${pos.x}, ${pos.y})`);
-            return;
+            return node;
         }
         // mono to mono
         node.select(".lex-text")
@@ -113,22 +122,47 @@ export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedV
             .attr("cx", pos.x)
             .attr("cy", pos.y);
     }
+    lexset.position = pos;
     return node;
 }
 
-export function createDiphthongPlayer(diph: Diphthong) {
-    let player = new DiphthongScheduler(diph.start, diph.end);
-    let diphGroup = d3.select("#svg-diphs");
 
-    return diphGroup.append("path")
-        .attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]))
-        .classed("diph-bounds", true)
-        // hidden - animated
-        .attr('stroke', 'white') // this just needs to be here
-        .attr('stroke-opacity', 0)
-        .attr('stroke-width', 10)
-        .style("cursor", "pointer")
-        .on("click", function () {
-            player.play();
-        });
+export function repositionVowels(
+    d3gs: d3.Selection<SVGGElement, PositionedVowel, SVGGElement, unknown>, state: VowelPositionState) {
+    (d3gs.selectAll(".vowel-circle") as
+        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        .transition()
+        .duration(500)
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    (d3gs.selectAll(".vowel-text") as
+        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        .transition()
+        .duration(500)
+        .attr("x", d => d.x + (state === VowelPositionState.TRAPEZOID ? (d.rounded ? 5 : -5) : 5))
+        .attr("y", d => d.y - 5);
+    (d3gs.selectAll(".vowel-bounds") as
+        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        .transition()
+        .duration(500)
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    
+    let diphs = document.getElementById("svg-lex");
+    for(let diph of diphs!.getElementsByClassName("lex-diph")) {
+        let name = undefined;
+        for(let cls of diph.classList) {
+            if(cls === 'lex-diph') continue;
+            if(cls.startsWith("lex-")) {
+                name = cls.substring(4);
+                break;
+            }
+        }
+        let lexset = lexsetData.get(name!)!;
+        let pos = lexset.position;
+        positionLexset(lexset, pos!);
+        console.log("foo");
+        
+    }
+    
 }

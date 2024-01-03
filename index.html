@@ -20,10 +20,10 @@
             <label class="tab" for="radio-1">Home</label>
             <input type="radio" id="radio-2" name="tabs" />
             <label class="tab" for="radio-2">Lexical Sets</label>
-            <input type="radio" id="radio-3" name="tabs" />
-            <label class="tab" for="radio-3">Great Vowel Shift</label>
-            <input type="radio" id="radio-4" name="tabs" />
-            <label class="tab" for="radio-4">Mergers</label>
+            <input type="radio" id="radio-3" name="tabs" disabled/>
+            <label class="tab blocked" for="radio-3">Great Vowel Shift</label>
+            <input type="radio" id="radio-4" name="tabs" disabled/>
+            <label class="tab blocked" for="radio-4">Mergers</label>
             <span class="glider"></span>
           </li>   
           <li><h2>Vowelchart</h2></li>
@@ -70,12 +70,15 @@
 
         <div class="sidebar-right">
           <input type="checkbox" id="play-reference" checked onchange="
-                                    toggleReferenceRecordings();">
-          Reference recordings<br>
+                                    toggle('referenceRecordings');">
+          <label for="play-reference">Reference recordings</label><br>
           <input type="checkbox" id="toggle-diphs" checked onchange="
-                                    toggleDiphthongs();">
-          Diphthongs<br>
+                                    toggle('diphthongs');">
+          <label for="toggle-diphs">Diphthongs</label><br>
+        
           <div class="home-only">
+            <input type="checkbox" id="toggle-trapezoid" name="trapezoid" onchange="toggle('trapezoid');">
+            <label for="trapezoid">Trapezoid</label><br>
             <h3 style="margin-bottom: 0;">IPA Key</h3>
             <span class="legend-sq" style="background-color: black;"></span>
             <span>Unrounded</span><br>
@@ -92,7 +95,7 @@
           </div>
           <div class="lex-only hidden">
             <input type="checkbox" id="toggle-rp" onchange="
-                                                      toggleRP();">
+                                                      toggle('RP');">
             RP<br>
             <h3 style="margin-bottom: 0;">Lexical Set Key</h3>
             <span class="legend-sq lex-rhotic"></span>

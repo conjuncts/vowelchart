@@ -7,6 +7,7 @@ export class LexicalSet {
     name: string;
     RP: (Vowel | AdjustedPosition | Diphthong)[];
     GA: (Vowel | AdjustedPosition | Diphthong)[];
+    position: (PositionedVowel | Diphthong | undefined);
     examples: string[];
     constructor() {
         this.name = "";
@@ -74,12 +75,11 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         console.log('lexical sets: ', lexsetData);
 
         // place behind, https://stackoverflow.com/a/36792669
-        let gs = svg.insert('g', ":first-child")
+        let gs = svg.insert('g', "#svg-vowels")
             .attr("id", "svg-lex");
 
         const curve = d3.line();
         
-        let diphGroup = d3.select("#svg-diphs");
         for(let lexset of lexsetData.values()) {
             let node = gs.append("g")
                 .classed(`lex-${lexset.name}`, true);
@@ -102,12 +102,14 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             let start;
             let end;
             if(diph) {
-                start = [x(diph.start.F2), y(diph.start.F1)] as [number, number];
-                end = [x(diph.end.F2), y(diph.end.F1)] as [number, number];
+                start = [diph.start.x, diph.start.y] as [number, number];
+                end = [diph.end.x, diph.end.y] as [number, number];
                 path.attr("marker-end", lexset.rhotic ?
                     "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+                node.classed("lex-diph", true);
+                lexset.position = diph;
             } else if(pos) {
-                start = end = [x(pos.F2), y(pos.F1)] as [number, number];
+                start = end = [pos.x, pos.y] as [number, number];
                 // plot circles for monophthongs
                 node.append("circle")
                     .classed("lex-circle", true)
@@ -116,6 +118,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                     .attr("r", 0) // animated
                     .style("fill", "#69b3a222")
                     .attr("alt", lexset.name);
+                lexset.position = pos;
             } else {
                 continue;
             }
@@ -132,6 +135,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                     .attr("y", midpoint[1])
                     .attr("transform",
                         `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
+                    .classed("hidden", true)
                     .style("opacity", "0") // animated
                     .text(lexset.name);
             } else if (pos) {
@@ -142,6 +146,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                     .attr("y", pos.y)
                     .attr('transform',
                         `translate(${pos.dx + 5}, ${pos.dy + 10})`)
+                    .classed("hidden", true)
                     .style("opacity", "0") // animated
                     .text(lexset.name)
                     .classed("lex-rhotic", lexset.rhotic!);
@@ -151,7 +156,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             // clickable diphthongs
             if (diph) {
                 let player = new DiphthongScheduler(diph.start, diph.end);
-                diphGroup.append("path")
+                // diphGroup
+                node.append("path")
                     .attr("d", curve([start, end]))
                     .classed("diph-bounds", true) 
                     // hidden - animated

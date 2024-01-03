@@ -32,3 +32,11 @@ FOOT lexical set). However, the RP pronunciation is audibly different and seems 
 with a lower F1 score of around 300. This is about where Catford 1988 places it. This also is the
 only explanation for oʊ diphthongs, which qualitatively require a decrease in F1, and only makes
 sense if ʊ has the lower F1 value. 
+
+https://sail.usc.edu/span/rtmri_ipa/
+- used for praat values for i-bar
+polymathy
+simon roper
+dr 
+
+Praat for close vowels is pretty poor

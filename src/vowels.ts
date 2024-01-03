@@ -12,6 +12,8 @@ export class Vowel {
     F3: number;
     rounded: boolean;
     show: boolean;
+    frontness: number;
+    openness: number;
     constructor(filename: string, symbol: string, F1: number, F2: number, F3: number) {
         this.filename = filename;
         this.symbol = symbol;
@@ -20,6 +22,34 @@ export class Vowel {
         this.F3 = F3;
         this.rounded = filename.includes('_rounded');
         this.show = filename !== 'hidden.ogg.mp3';
+        
+        let xi = 0;
+        if (filename.includes("_front_")) {
+            xi = 4;
+        } else if (filename.includes("_near-front_")) {
+            xi = 3;
+        } else if (filename.includes("_central_")) {
+            xi = 2;
+        } else if (filename.includes("_near-back_")) {
+            xi = 1;
+        }
+        let yi = 0;
+        if (filename.startsWith("Open_") || filename.startsWith("PR-open_")) {
+            yi = 6;
+        } else if (filename.startsWith("Near-open_")) {
+            yi = 5;
+        } else if (filename.startsWith("Open-mid_") || filename.startsWith("PR-open-mid_")) {
+            yi = 4;
+        } else if (filename.startsWith("Mid_")) {
+            yi = 3;
+        } else if (filename.startsWith("Close-mid_")) {
+            yi = 2;
+        } else if (filename.startsWith("Near-close_")) {
+            yi = 1;
+        }
+        this.frontness = xi;
+        this.openness = yi;
+        
     }
 }
 export type PositionedVowel = (Vowel & AdjustedPosition);
@@ -125,8 +155,14 @@ export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: numb
 }
 
 export function isPositionedVowel(x: any): x is AdjustedPosition {
-    return x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
+    return x !== undefined && 
+        x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
 }
 
 
 export type MixedVowel = PositionedVowel | Diphthong;
+
+export enum VowelPositionState {
+    FORMANT = 0,
+    TRAPEZOID = 1
+}
