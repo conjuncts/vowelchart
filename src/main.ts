@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggle, hydrateTabs } from './tabs';
 import { loadLexicalSets } from './lexsets';
-import { diphs, PositionedVowel, FreeVowel } from './vowels';
+import { diphs, Vowel } from './vowels';
 (window as any).toggle = toggle;
 
 hydrateTabs();
@@ -67,23 +67,16 @@ svg.append("rect")
 
 
 // Read the data
-export let vowelData: Record<string, PositionedVowel> = {};
+export let vowelData: Record<string, Vowel> = {};
 
-export let d3gs: d3.Selection<SVGGElement, PositionedVowel, SVGGElement, unknown>;
+export let d3gs: d3.Selection<SVGGElement, Vowel, SVGGElement, unknown>;
 
 d3.tsv("formants.tsv").then(function (data) {
     // put data
     data.forEach((d: any) => {
-        // // let process = d;
-        // // process["F1"] = +d["F1"];
-        // // process["F2"] = +d["F2"];
-        // // process["F3"] = +d["F3"];
-        // // d["rounded"] = d["filename"].includes("_rounded");
-        // // d["show"] = d["filename"] !== "hidden.ogg.mp3";
-        // vowelData[d.symbol] = positionVowel(process, x, y, []);
         let [F1, F2, F3] = [+d.F1, +d.F2, +d.F3];
-        let v = new FreeVowel(d.filename, d.symbol, F1, F2, F3, x(F2), y(F1));
-        vowelData[v.symbol] = v; // plopVowel(v, x, y);
+        let v = new Vowel(d.filename, d.symbol, F1, F2, F3, x(F2), y(F1));
+        vowelData[v.symbol] = v;
     });
     console.log('vowel formants:', vowelData);
 
@@ -138,7 +131,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
         .on("click", function () {
-            var d = d3.select(this).datum() as PositionedVowel;
+            var d = d3.select(this).datum() as Vowel;
             var audio = new Audio("./vowels/" + d.filename);
             if (enableReferenceVowels) {
                 audio.play();
@@ -196,7 +189,7 @@ d3.tsv("formants.tsv").then(function (data) {
 
     }
 }).then(() => {
-    loadLexicalSets(svg, vowelData, x, y);
+    loadLexicalSets(svg, vowelData);
     
 });
 

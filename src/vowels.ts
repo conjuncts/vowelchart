@@ -4,7 +4,7 @@ export interface AdjustedPosition {
     dx: number;
     dy: number;
 }
-export class FreeVowel {
+export class Vowel {
     filename: string;
     symbol: string;
     F1: number;
@@ -57,9 +57,7 @@ export class FreeVowel {
         
     }
 }
-export type Position = { x: number, y: number };
-export type PositionedVowel = (FreeVowel & Position);
-export class AdjustedVowel<T extends PositionedVowel = PositionedVowel> implements AdjustedPosition {
+export class AdjustedVowel<T extends Vowel = Vowel> implements AdjustedPosition {
     vowel: T;
     dx: number;
     dy: number;
@@ -82,16 +80,12 @@ export class AdjustedVowel<T extends PositionedVowel = PositionedVowel> implemen
     }
 }
 
-export function isFreeVowel(x: any): x is FreeVowel {
-    return x !== undefined && x.filename !== undefined && x.symbol !== undefined 
-    && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined;
-}
 
 export class Diphthong {
     symbols: string;
-    start: PositionedVowel;
-    end: PositionedVowel;
-    constructor(start: PositionedVowel, end: PositionedVowel, symbols?: string) {
+    start: Vowel;
+    end: Vowel;
+    constructor(start: Vowel, end: Vowel, symbols?: string) {
         this.symbols =  (!symbols ? '' + start.symbol + end.symbol : symbols);
         this.start = start;
         this.end = end;
@@ -104,11 +98,11 @@ export class Diphthong {
 /**
  * Two types: rhotic and longened
  */
-export class SuffixedVowel implements PositionedVowel {
+export class SuffixedVowel implements Vowel {
     symbols: string;
     suffix: string;
-    _inherit: PositionedVowel;
-    constructor(v: PositionedVowel, suffix: string) {
+    _inherit: Vowel;
+    constructor(v: Vowel, suffix: string) {
         this._inherit = v;
         this.symbols = v.symbol + suffix;
         this.suffix = suffix;
@@ -149,8 +143,8 @@ export class SuffixedVowel implements PositionedVowel {
 
 
 
-export function vowelFromString(s: string, formantData: Record<string, PositionedVowel>): 
-        PositionedVowel | SuffixedVowel | Diphthong | undefined {
+export function vowelFromString(s: string, formantData: Record<string, Vowel>): 
+        Vowel | SuffixedVowel | Diphthong | undefined {
     if (s.length === 1) {
         return formantData[s]; // monophthong
     }
@@ -187,21 +181,10 @@ o ʊ̝`.split("\n").map((x) => x.split(' '));
 // ʊ
 
 
-type Axis = d3.ScaleLinear<number, number, never>;
+export function adjustVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
+    checkCollisionsWith: Iterable<AdjustedPosition>): AdjustedVowel<Vowel & T>{
 
-export function plopVowel<T extends FreeVowel>(vowel: T, x: Axis, y: Axis): PositionedVowel & T {
-    let out = vowel as T & PositionedVowel;
-    out.x = x(vowel.F2);
-    out.y = y(vowel.F1);
-    return out;
-}
-
-export function adjustVowel<T extends FreeVowel>(vowel: T, // F1: number, F2: number, 
-    x: Axis,
-    y: Axis,
-    checkCollisionsWith: Iterable<AdjustedPosition>): AdjustedVowel<PositionedVowel & T>{
-
-    let out = plopVowel(vowel, x, y);
+    let out = vowel;
     let textx = out.x;
     let texty = out.y;
     // prevent at same position
@@ -218,16 +201,18 @@ export function adjustVowel<T extends FreeVowel>(vowel: T, // F1: number, F2: nu
     return new AdjustedVowel(out, textx - out.x, texty - out.y);
 }
 
+export type Position = { x: number, y: number };
 export function isPosition(x: any): x is Position {
     return x !== undefined && 
         x.x !== undefined && x.y !== undefined;
 }
 
-export function isVowel(x: any): x is PositionedVowel {
-    return isFreeVowel(x) && isPosition(x);
+export function isVowel(x: any): x is Vowel {
+    return x !== undefined && x.filename !== undefined && x.symbol !== undefined
+        && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined && isPosition(x);
 }
 
-export type MixedVowel = PositionedVowel | Diphthong;
+export type MixedVowel = Vowel | Diphthong;
 
 export enum VowelPositionState {
     FORMANT = 0,

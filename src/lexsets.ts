@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Diphthong, isRhotic, vowelFromString, adjustVowel, AdjustedPosition, PositionedVowel, AdjustedVowel } from './vowels';
+import { Diphthong, isRhotic, vowelFromString, adjustVowel, AdjustedPosition, Vowel, AdjustedVowel } from './vowels';
 import { DiphthongScheduler } from './synthesis';
 import { positionDiphText } from './positioning';
 
@@ -30,36 +30,33 @@ export let lexsetData: Map<string, LexicalSet> = new Map();
 // let lexsetPositions: Map<string, PositionedVowel> = new Map();
 
 export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
-    formantData: Record<string, PositionedVowel>,
-    x: d3.ScaleLinear<number, number, never>,
-    y: d3.ScaleLinear<number, number, never>) {
+    formantData: Record<string, Vowel>) {
 
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
-        let _RP_builder: AdjustedPosition[] = [];
-        let _GA_builder: AdjustedPosition[] = [];
+        let _RPbuilder: AdjustedPosition[] = [];
+        let _GAbuilder: AdjustedPosition[] = [];
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
-            let RP: (PositionedVowel | Diphthong) = vowelFromString(d["RP"], formantData)!; 
+            let RP: (Vowel | Diphthong) = vowelFromString(d["RP"], formantData)!; 
             // most of these will only have 1 element
-            let GA: (PositionedVowel | Diphthong) = vowelFromString(d["GA"], formantData)!;
+            let GA: (Vowel | Diphthong) = vowelFromString(d["GA"], formantData)!;
             
             // position
             if(RP instanceof Diphthong) {
                 lex.RP = RP;
             } else {
-                let RP_adjusted = adjustVowel(RP, x, y, _RP_builder);
-                lex.RP = RP_adjusted; // , ...RPs.slice(1)];
-                _RP_builder.push(RP_adjusted);
+                lex.RP = adjustVowel(RP, _RPbuilder); // , ...RPs.slice(1)];
+                _RPbuilder.push(lex.RP);
             }
             
             if(GA instanceof Diphthong) {
                 lex.GA = GA;
             } else {
-                let GA_positioned = adjustVowel(GA, x, y, _GA_builder);
+                let GA_positioned = adjustVowel(GA, _GAbuilder);
                 lex.GA = GA_positioned; // , ...GAs.slice(1)];
-                _GA_builder.push(GA_positioned);
+                _GAbuilder.push(GA_positioned);
             }
             lex.examples = d['Examples'].split(', ');
 

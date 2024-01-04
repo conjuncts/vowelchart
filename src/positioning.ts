@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { LexicalSet, lexsetData } from "./lexsets";
-import { AdjustedVowel, Diphthong, PositionedVowel, VowelPositionState, isVowel } from "./vowels";
+import { AdjustedVowel, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     let dy = diph.end.y - diph.start.y;
@@ -127,21 +127,21 @@ export function positionLexset(lexset: LexicalSet, pos: AdjustedVowel | Diphthon
 
 
 export function repositionVowels(
-    d3gs: d3.Selection<SVGGElement, PositionedVowel, SVGGElement, unknown>, state: VowelPositionState) {
+    d3gs: d3.Selection<SVGGElement, Vowel, SVGGElement, unknown>, state: VowelPositionState) {
     (d3gs.selectAll(".vowel-circle") as
-        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        d3.Selection<SVGCircleElement, Vowel, SVGGElement, unknown>)
         .transition()
         .duration(500)
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
     (d3gs.selectAll(".vowel-text") as
-        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        d3.Selection<SVGCircleElement, Vowel, SVGGElement, unknown>)
         .transition()
         .duration(500)
         .attr("x", d => d.x + (state === VowelPositionState.TRAPEZOID ? (d.rounded ? 5 : -5) : 5))
         .attr("y", d => d.y - 5);
     (d3gs.selectAll(".vowel-bounds") as
-        d3.Selection<SVGCircleElement, PositionedVowel, SVGGElement, unknown>)
+        d3.Selection<SVGCircleElement, Vowel, SVGGElement, unknown>)
         .transition()
         .duration(500)
         .attr("cx", d => d.x)
@@ -172,7 +172,7 @@ export class LexSnapshot {
     constructor(data: Map<LexicalSet, AdjustedVowel | Diphthong>) {
         this.data = data;
     }
-    computeAdjustments(lex: LexicalSet, pos: PositionedVowel, checkCollisionsWith?: Iterable<AdjustedVowel>): 
+    computeAdjustments(pos: Vowel, checkCollisionsWith?: Iterable<AdjustedVowel>): 
         AdjustedVowel {
         if(checkCollisionsWith === undefined) {
             checkCollisionsWith = [];

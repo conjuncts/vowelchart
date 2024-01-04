@@ -1,6 +1,6 @@
 
 import * as d3 from 'd3';
-import { AdjustedVowel, Diphthong, PositionedVowel, VowelPositionState } from './vowels';
+import { AdjustedVowel, Diphthong, Vowel, VowelPositionState } from './vowels';
 import { lexsetData } from './lexsets';
 import { positionLexset, repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
@@ -131,7 +131,7 @@ function toggleLexsets(enable?: boolean) {
     } else {
         setTimeout(() => {
             d3.selectAll(".vowel-text")
-                .style("fill", d => (d as PositionedVowel).rounded ? "blue" : "black");
+                .style("fill", d => (d as Vowel).rounded ? "blue" : "black");
         }, 100);
         for (let x of document.getElementsByClassName("lex-only")) {
             x.classList.add("hidden");
