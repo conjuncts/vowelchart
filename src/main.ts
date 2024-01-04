@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggle, hydrateTabs } from './tabs';
 import { loadLexicalSets } from './lexsets';
-import { diphs, PositionedVowel, positionVowel, Vowel } from './vowels';
+import { diphs, PositionedVowel, FreeVowel } from './vowels';
 (window as any).toggle = toggle;
 
 hydrateTabs();
@@ -81,8 +81,9 @@ d3.tsv("formants.tsv").then(function (data) {
         // // d["rounded"] = d["filename"].includes("_rounded");
         // // d["show"] = d["filename"] !== "hidden.ogg.mp3";
         // vowelData[d.symbol] = positionVowel(process, x, y, []);
-        let v = new Vowel(d.filename, d.symbol, +d.F1, +d.F2, +d.F3);
-        vowelData[v.symbol] = positionVowel(v, x, y, []);
+        let [F1, F2, F3] = [+d.F1, +d.F2, +d.F3];
+        let v = new FreeVowel(d.filename, d.symbol, F1, F2, F3, x(F2), y(F1));
+        vowelData[v.symbol] = v; // plopVowel(v, x, y);
     });
     console.log('vowel formants:', vowelData);
 
@@ -137,7 +138,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
         .on("click", function () {
-            var d = d3.select(this).datum() as Vowel;
+            var d = d3.select(this).datum() as PositionedVowel;
             var audio = new Audio("./vowels/" + d.filename);
             if (enableReferenceVowels) {
                 audio.play();

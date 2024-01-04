@@ -1,10 +1,10 @@
-export interface AdjustedPosition extends Vowel {
+export interface AdjustedPosition {
     x: number;
     y: number;
     dx: number;
     dy: number;
 }
-export class Vowel {
+export class FreeVowel {
     filename: string;
     symbol: string;
     F1: number;
@@ -14,7 +14,9 @@ export class Vowel {
     show: boolean;
     frontness: number;
     openness: number;
-    constructor(filename: string, symbol: string, F1: number, F2: number, F3: number) {
+    x: number;
+    y: number;
+    constructor(filename: string, symbol: string, F1: number, F2: number, F3: number, x: number, y: number) {
         this.filename = filename;
         this.symbol = symbol;
         this.F1 = F1;
@@ -50,12 +52,39 @@ export class Vowel {
         this.frontness = xi;
         this.openness = yi;
         
+        this.x = x;
+        this.y = y;
+        
     }
 }
-export type PositionedVowel = (Vowel & AdjustedPosition);
+export type Position = { x: number, y: number };
+export type PositionedVowel = (FreeVowel & Position);
+export class AdjustedVowel<T extends PositionedVowel = PositionedVowel> implements AdjustedPosition {
+    vowel: T;
+    dx: number;
+    dy: number;
+    constructor(v: T, dx: number, dy: number) {
+        this.vowel = v;
+        this.dx = dx;
+        this.dy = dy;
+    }
+    get x() {
+        return this.vowel.x;
+    }
+    set x(x) {
+        this.vowel.x = x;
+    }
+    get y() {
+        return this.vowel.y;
+    }
+    set y(y) {
+        this.vowel.y = y;
+    }
+}
 
-export function isVowel(x: any): x is Vowel {
-    return x.filename !== undefined && x.symbol !== undefined && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined;
+export function isFreeVowel(x: any): x is FreeVowel {
+    return x !== undefined && x.filename !== undefined && x.symbol !== undefined 
+    && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined;
 }
 
 export class Diphthong {
@@ -75,20 +104,53 @@ export class Diphthong {
 /**
  * Two types: rhotic and longened
  */
-export class SuffixedVowel extends Vowel {
+export class SuffixedVowel implements PositionedVowel {
     symbols: string;
     suffix: string;
-    constructor(v: Vowel, suffix: string) {
-        super(v.filename, v.symbol, v.F1, v.F2, v.F3);
+    _inherit: PositionedVowel;
+    constructor(v: PositionedVowel, suffix: string) {
+        this._inherit = v;
         this.symbols = v.symbol + suffix;
         this.suffix = suffix;
+        this.filename = v.filename;
+        this.symbol = v.symbol;
+        this.F1 = v.F1;
+        this.F2 = v.F2;
+        this.F3 = v.F3;
+        this.rounded = v.rounded;
+        this.frontness = v.frontness;
+        this.openness = v.openness;
+    }
+    filename: string; // inherited properties not expected to change
+    symbol: string;
+    F1: number;
+    F2: number;
+    F3: number;
+    rounded: boolean;
+    frontness: number;
+    openness: number;
+    get x() { // changeable properties
+        return this._inherit.x;
+    }
+    get y() {
+        return this._inherit.y;
+    }
+    set x(x) {
+        this._inherit.x = x;
+    }
+    set y(y) {
+        this._inherit.y = y;
+    }
+    get show() {
+        return this._inherit.show;
     }
 
 }
 
 
 
-export function vowelFromString(s: string, formantData: Record<string, PositionedVowel>): Vowel | Diphthong | undefined {
+export function vowelFromString(s: string, formantData: Record<string, PositionedVowel>): 
+        PositionedVowel | SuffixedVowel | Diphthong | undefined {
     if (s.length === 1) {
         return formantData[s]; // monophthong
     }
@@ -125,17 +187,23 @@ o ʊ̝`.split("\n").map((x) => x.split(' '));
 // ʊ
 
 
+type Axis = d3.ScaleLinear<number, number, never>;
 
-export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
-    x: d3.ScaleLinear<number, number, never>,
-    y: d3.ScaleLinear<number, number, never>,
-    checkCollisionsWith: Iterable<AdjustedPosition>): T & AdjustedPosition{
+export function plopVowel<T extends FreeVowel>(vowel: T, x: Axis, y: Axis): PositionedVowel & T {
+    let out = vowel as T & PositionedVowel;
+    out.x = x(vowel.F2);
+    out.y = y(vowel.F1);
+    return out;
+}
 
+export function adjustVowel<T extends FreeVowel>(vowel: T, // F1: number, F2: number, 
+    x: Axis,
+    y: Axis,
+    checkCollisionsWith: Iterable<AdjustedPosition>): AdjustedVowel<PositionedVowel & T>{
 
-    let atx = x(vowel.F2);
-    let aty = y(vowel.F1);
-    let textx = atx;
-    let texty = aty;
+    let out = plopVowel(vowel, x, y);
+    let textx = out.x;
+    let texty = out.y;
     // prevent at same position
     for (let pos of checkCollisionsWith) {
         if (Math.abs(pos.x + pos.dx - textx) < 10 && Math.abs(pos.y + pos.dy - texty) < 10) {
@@ -146,19 +214,18 @@ export function positionVowel<T extends Vowel>(vowel: T, // F1: number, F2: numb
     // let position = new AdjustedPosition(atx, aty);
     // position.dx = (textx - atx);
     // position.dy = (texty - aty);
-    let out = Object.assign({}, vowel) as (T & AdjustedPosition);
-    out.x = atx;
-    out.y = aty;
-    out.dx = (textx - atx);
-    out.dy = (texty - aty);
-    return out;
+    
+    return new AdjustedVowel(out, textx - out.x, texty - out.y);
 }
 
-export function isPositionedVowel(x: any): x is AdjustedPosition {
+export function isPosition(x: any): x is Position {
     return x !== undefined && 
-        x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
+        x.x !== undefined && x.y !== undefined;
 }
 
+export function isVowel(x: any): x is PositionedVowel {
+    return isFreeVowel(x) && isPosition(x);
+}
 
 export type MixedVowel = PositionedVowel | Diphthong;
 

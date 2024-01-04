@@ -1,22 +1,22 @@
 import * as d3 from 'd3';
-import { Diphthong, Vowel, isRhotic, vowelFromString, positionVowel, AdjustedPosition, PositionedVowel } from './vowels';
+import { Diphthong, isRhotic, vowelFromString, adjustVowel, AdjustedPosition, PositionedVowel, AdjustedVowel } from './vowels';
 import { DiphthongScheduler } from './synthesis';
 import { positionDiphText } from './positioning';
 
 export class LexicalSet {
     name: string;
-    RP: (Vowel | AdjustedPosition | Diphthong)[];
-    GA: (Vowel | AdjustedPosition | Diphthong)[];
-    position: (PositionedVowel | Diphthong | undefined);
+    RP?: (AdjustedVowel | Diphthong);
+    GA?: (AdjustedVowel | Diphthong);
+    position: (AdjustedVowel | Diphthong | undefined);
     examples: string[];
     constructor() {
         this.name = "";
-        this.RP = [];
-        this.GA = [];
+        this.RP = undefined;
+        this.GA = undefined;
         this.examples = [];
     }
     isRhotic(): boolean {
-        return isRhotic(this.GA[0]);
+        return isRhotic(this.GA!);
     }
     checked?: boolean;
     free?: boolean;
@@ -41,24 +41,24 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
-            let RPs: (Vowel | Diphthong)[] = d["RP"].split(", ").map((s: string) => vowelFromString(s, formantData)); 
+            let RP: (PositionedVowel | Diphthong) = vowelFromString(d["RP"], formantData)!; 
             // most of these will only have 1 element
-            let GAs: (Vowel | Diphthong)[] = d["GA"].split(", ").map((s: string) => vowelFromString(s, formantData));
+            let GA: (PositionedVowel | Diphthong) = vowelFromString(d["GA"], formantData)!;
             
             // position
-            if(RPs[0] instanceof Diphthong) {
-                lex.RP = RPs;
+            if(RP instanceof Diphthong) {
+                lex.RP = RP;
             } else {
-                let RP_positioned = positionVowel(RPs[0], x, y, _RP_builder);
-                lex.RP = [RP_positioned, ...RPs.slice(1)];
-                _RP_builder.push(RP_positioned);
+                let RP_adjusted = adjustVowel(RP, x, y, _RP_builder);
+                lex.RP = RP_adjusted; // , ...RPs.slice(1)];
+                _RP_builder.push(RP_adjusted);
             }
             
-            if(GAs[0] instanceof Diphthong) {
-                lex.GA = GAs;
+            if(GA instanceof Diphthong) {
+                lex.GA = GA;
             } else {
-                let GA_positioned = positionVowel(GAs[0], x, y, _GA_builder);
-                lex.GA = [GA_positioned, ...GAs.slice(1)];
+                let GA_positioned = adjustVowel(GA, x, y, _GA_builder);
+                lex.GA = GA_positioned; // , ...GAs.slice(1)];
                 _GA_builder.push(GA_positioned);
             }
             lex.examples = d['Examples'].split(', ');
@@ -89,9 +89,9 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                 .classed("lex-path", true)
                 .attr('stroke', lexset.rhotic ? 'darkorchid' : '#3b3bb3')
                 .attr('stroke-dasharray', '10,10');
-            let ele = lexset.GA[0];
+            let ele = lexset.GA;
             let diph = ele instanceof Diphthong ? ele : undefined;
-            let pos = diph ? undefined : ele as Vowel & AdjustedPosition;
+            let pos = diph ? undefined : ele as AdjustedVowel;
             
             if(!(diph || pos)) {
                 console.log("neither diph nor pos", lexset.name);

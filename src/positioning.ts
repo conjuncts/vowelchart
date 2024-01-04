@@ -1,7 +1,6 @@
 import * as d3 from 'd3';
 import { LexicalSet, lexsetData } from "./lexsets";
-import { Diphthong, MixedVowel, PositionedVowel, VowelPositionState, isPositionedVowel } from "./vowels";
-import { DiphthongScheduler } from './synthesis';
+import { AdjustedVowel, Diphthong, PositionedVowel, VowelPositionState, isVowel } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     let dy = diph.end.y - diph.start.y;
@@ -19,7 +18,7 @@ export function positionDiphText(diph: Diphthong): [number, [number, number]] {
 }
 
 
-export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedVowel): 
+export function positionLexset(lexset: LexicalSet, pos: AdjustedVowel | Diphthong, was?: AdjustedVowel | Diphthong): 
     d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
     let node = d3.select(`.lex-${lexset.name}`);
 
@@ -55,7 +54,7 @@ export function positionLexset(lexset: LexicalSet, pos: MixedVowel, was?: MixedV
 
         let txt = node.select(".lex-text")
             .classed("lex-diph-text", true);
-        if (lexset.name === "CURE" && isPositionedVowel(was)) {
+        if (lexset.name === "CURE" && isVowel(was)) {
             txt.attr('transform',
                 `rotate(${rotation}, ${was.x}, ${was.y})`); // animation is broken
         }
@@ -165,4 +164,41 @@ export function repositionVowels(
         
     }
     
+}
+
+
+export class LexSnapshot {
+    data: Map<LexicalSet, AdjustedVowel | Diphthong>;
+    constructor(data: Map<LexicalSet, AdjustedVowel | Diphthong>) {
+        this.data = data;
+    }
+    computeAdjustments(lex: LexicalSet, pos: PositionedVowel, checkCollisionsWith?: Iterable<AdjustedVowel>): 
+        AdjustedVowel {
+        if(checkCollisionsWith === undefined) {
+            checkCollisionsWith = [];
+            for(let pos of this.data.values()) {
+                if(pos === undefined) continue;
+                if(pos instanceof Diphthong) continue;
+                (checkCollisionsWith as AdjustedVowel[]).push(pos);
+            }
+        }
+        
+        let atx = pos.x;
+        let aty = pos.y;
+        let textx = atx;
+        let texty = aty;
+        // prevent at same position
+        for (let pos of checkCollisionsWith) {
+            if (Math.abs(pos.vowel.x + pos.dx - textx) < 10 && Math.abs(pos.vowel.y + pos.dy - texty) < 10) {
+                texty += 10; // works since duplicates are handled ascending
+            }
+        }
+        let out = new AdjustedVowel(pos, 
+            textx - atx,
+            texty - aty
+        );
+        return out;
+        
+        
+    }
 }

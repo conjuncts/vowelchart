@@ -1,9 +1,9 @@
 
 import * as d3 from 'd3';
-import { Diphthong, PositionedVowel, Vowel, VowelPositionState, isPositionedVowel, isVowel } from './vowels';
+import { AdjustedVowel, Diphthong, PositionedVowel, VowelPositionState } from './vowels';
 import { lexsetData } from './lexsets';
 import { positionLexset, repositionVowels } from './positioning';
-import { vowelData, x as position_x, y as position_y, d3gs } from './main';
+import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { DiphthongScheduler } from './synthesis';
 
 export enum Tab {
@@ -131,7 +131,7 @@ function toggleLexsets(enable?: boolean) {
     } else {
         setTimeout(() => {
             d3.selectAll(".vowel-text")
-                .style("fill", d => (d as Vowel).rounded ? "blue" : "black");
+                .style("fill", d => (d as PositionedVowel).rounded ? "blue" : "black");
         }, 100);
         for (let x of document.getElementsByClassName("lex-only")) {
             x.classList.add("hidden");
@@ -213,36 +213,36 @@ function toggleRP(enable?: boolean) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
     for (let lexset of lexsetData.values()) {
-        let pos;
-        let was;
+        let pos: AdjustedVowel | Diphthong | undefined;
+        let was: AdjustedVowel | Diphthong | undefined;
         if (enable) {
-            pos = lexset.RP[0];
-            was = lexset.GA[0];
+            pos = lexset.RP;
+            was = lexset.GA;
         } else {
-            pos = lexset.GA[0];
-            was = lexset.RP[0];
+            pos = lexset.GA;
+            was = lexset.RP;
         }
-        if (pos instanceof Diphthong || (isVowel(pos) && isPositionedVowel(pos))) {
-            if(was instanceof Diphthong || (isVowel(was) && isPositionedVowel(was))) {
-                let node = positionLexset(lexset, pos, was);
-                if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
-                    let player = new DiphthongScheduler(pos.start, pos.end);
-                    node.append("path")
-                        .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
-                        .classed("diph-bounds", true)
-                        // hidden - animated
-                        .attr('stroke', 'white') // this just needs to be here
-                        .attr('stroke-opacity', 0)
-                        .attr('stroke-width', 10)
-                        .style("cursor", "pointer")
-                        .on("click", function () {
-                            player.play();
-                        })
-                        .classed("RP-diph-bounds", true);
-                    node.classed("lex-diph", true);
-                }
-            }
+        if(pos === undefined) continue;
+        
+        let node = positionLexset(lexset, pos, was);
+        if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
+            let player = new DiphthongScheduler(pos.start, pos.end);
+            node.append("path")
+                .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
+                .classed("diph-bounds", true)
+                // hidden - animated
+                .attr('stroke', 'white') // this just needs to be here
+                .attr('stroke-opacity', 0)
+                .attr('stroke-width', 10)
+                .style("cursor", "pointer")
+                .on("click", function () {
+                    player.play();
+                })
+                .classed("RP-diph-bounds", true);
+            node.classed("lex-diph", true);
         }
+            
+        
     }
     RP_diphs = true;
     d3.selectAll(".RP-diph-bounds")
@@ -254,22 +254,21 @@ function toggleTrapezoid(enable?: boolean) {
     if(enable) {
         // reposition all vowels
         for(let vowel of Object.values(vowelData)) {
-            if(isPositionedVowel(vowel)) {
-                // bottom distance: 493px :: 370.93 -- about 50%
-                // top distance: 979px :: 736.6
-                // vertical distance: 731px :: 550.
-                
-                let y = 250 + (vowel.openness / 6) * (800 - 250);
-                let x = 600 + (vowel.frontness / 4) * (2400 - 600) * (1 - 1/2 * vowel.openness / 6);
-                
-                x += (vowel.rounded ? -20 : 20);
-                
-                vowel.x = position_x(x);
-                vowel.y = position_y(y);
-                
-                // vowel.x = vowel.xTrapezoid;
-                // vowel.y = vowel.yTrapezoid;
-            }
+            // bottom distance: 493px :: 370.93 -- about 50%
+            // top distance: 979px :: 736.6
+            // vertical distance: 731px :: 550.
+            
+            let y = 250 + (vowel.openness / 6) * (800 - 250);
+            let x = 600 + (vowel.frontness / 4) * (2400 - 600) * (1 - 1/2 * vowel.openness / 6);
+            
+            x += (vowel.rounded ? -20 : 20);
+            
+            vowel.x = xAxis(x);
+            vowel.y = yAxis(y);
+            
+            // vowel.x = vowel.xTrapezoid;
+            // vowel.y = vowel.yTrapezoid;
+            
         }
         repositionVowels(d3gs, VowelPositionState.TRAPEZOID);
         
@@ -283,10 +282,9 @@ function toggleTrapezoid(enable?: boolean) {
         
     } else {
         for(let vowel of Object.values(vowelData)) {
-            if(isPositionedVowel(vowel)) {
-                vowel.x = position_x(vowel.F2);
-                vowel.y = position_y(vowel.F1);
-            }
+            vowel.x = xAxis(vowel.F2);
+            vowel.y = yAxis(vowel.F1);
+            
         }
         repositionVowels(d3gs, VowelPositionState.FORMANT);
         
