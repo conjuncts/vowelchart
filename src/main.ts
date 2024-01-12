@@ -43,7 +43,7 @@ axes.append("g")
     .call(d3.axisRight(y));
 
 // vowel synthesis playback
-svg.append("rect")
+svg.select("#vowel-playback")
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", width - rightOffset)
@@ -87,8 +87,7 @@ d3.tsv("formants.tsv").then(function (data) {
     const curve = d3.line().curve(d3.curveMonotoneX);
 
     // dotted lines
-    svg.append('path')
-        .attr('id', 'frontier')
+    svg.select('#frontier')
         .attr('d', curve(vertices as any))
         .attr('stroke', 'black')
         .attr('fill', 'none')
@@ -98,12 +97,11 @@ d3.tsv("formants.tsv").then(function (data) {
         .style("z-index", "-99");
 
     // begin data points
-    let gs = d3gs = svg.append('g')
-        .attr("id", "svg-vowels")
+    let gs = d3gs = svg.select('#svg-vowels')
         .selectAll("foo")
         .data(Object.values(vowelData).filter(d => d.show))
         .enter()
-        .append("g");
+        .append("g") as d3.Selection<SVGGElement, Vowel, SVGGElement, unknown>;
 
     gs.append("text")
         .classed("vowel-text", true)
@@ -148,45 +146,6 @@ d3.tsv("formants.tsv").then(function (data) {
             }
         });
 
-
-    // add diphthongs
-        
-    let diphGroup = svg.insert("g", "#svg-vowels").attr("id", "svg-diphs");
-    for (let diphstr of diphs) {
-        continue;
-        let diph = diphstr.map(s => vowelData[s]);
-
-        let player = new DiphthongScheduler(diph[0], diph[1]);
-
-        // visible diphthongs
-        let start = [diph[0].x, diph[0].y] as [number, number];
-        let end = [diph[1].x, diph[1].y] as [number, number];
-        // // let percent = .92;
-        let end_adjusted = end;
-        // // [percent * end[0] + (1 - percent) * start[0], 
-        // //     percent * end[1] + (1 - percent) * start[1]] as [number, number];
-        // diphGroup.append("path")
-        //     .attr("d", curve([start, end_adjusted]))
-        //     .classed("lex-path", true)
-        //     .attr('stroke', '#3b3bb3')
-        //     .attr('stroke-dasharray', '10,10')
-        //     .attr("marker-end", "url(#diph-arrowhead)")
-        //     .attr('stroke-opacity', 0); // animated
-
-        // clickable diphthongs
-        diphGroup.append("path")
-            .attr("d", curve([start, end_adjusted]))
-            .classed("diph-bounds", true)
-            .style("display", "none") // animated
-            .attr('stroke', 'white') // this just needs to be here
-            .attr('stroke-opacity', 0)
-            .attr('stroke-width', 10)
-            .style("cursor", "pointer")
-            .on("click", function () {
-                player.play();
-            });
-
-    }
 }).then(() => {
     loadLexicalSets(svg, vowelData);
     

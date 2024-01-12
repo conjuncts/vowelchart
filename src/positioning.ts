@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { LexicalSet, lexsetData } from "./lexsets";
-import { AdjustedPosition, AdjustedVowel, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
+import { AdjustedPosition, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     let dy = diph.end.y - diph.start.y;
@@ -17,7 +17,13 @@ export function positionDiphText(diph: Diphthong): [number, [number, number]] {
 
 }
 
-
+/**
+ * @deprecated, modify lexsetData directly then call updateLexsets
+ * @param lexset 
+ * @param pos 
+ * @param was 
+ * @returns 
+ */
 export function positionLexset(lexset: LexicalSet, pos: AdjustedPosition | Diphthong, was?: AdjustedPosition | Diphthong): 
     d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
     let node = d3.select(`.lex-${lexset.name}`);

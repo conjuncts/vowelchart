@@ -1,7 +1,7 @@
 
 import * as d3 from 'd3';
 import { AdjustedVowel, Diphthong, Vowel, VowelPositionState } from './vowels';
-import { lexsetData } from './lexsets';
+import { lexsetData, updateLexsets } from './lexsets';
 import { positionLexset, repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { DiphthongScheduler } from './synthesis';
@@ -218,47 +218,56 @@ export function recalculateActiveTab() {
     return tab;
 }
 
-let RP_diphs = false;
+// let RP_diphs = false;
 
 function toggleRP(enable?: boolean) {
     if (enable === undefined) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
-    for (let lexset of lexsetData.values()) {
-        let pos: AdjustedVowel | Diphthong | undefined;
-        let was: AdjustedVowel | Diphthong | undefined;
-        if (enable) {
-            pos = lexset.RP;
-            was = lexset.GA;
-        } else {
-            pos = lexset.GA;
-            was = lexset.RP;
-        }
-        if(pos === undefined) continue;
+    
+    for(let lexset of lexsetData.values()) {
+        if (enable) 
+            lexset.position = lexset.RP;
+        else
+            lexset.position = lexset.GA;
+    }
+    updateLexsets(lexsetData, false);
+    
+    // for (let lexset of lexsetData.values()) {
+    //     let pos: AdjustedVowel | Diphthong | undefined;
+    //     let was: AdjustedVowel | Diphthong | undefined;
+    //     if (enable) {
+    //         pos = lexset.RP;
+    //         was = lexset.GA;
+    //     } else {
+    //         pos = lexset.GA;
+    //         was = lexset.RP;
+    //     }
+    //     if(pos === undefined) continue;
         
-        let node = positionLexset(lexset, pos, was);
-        if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
-            let player = new DiphthongScheduler(pos.start, pos.end);
-            node.append("path")
-                .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
-                .classed("diph-bounds", true)
-                // hidden - animated
-                .attr('stroke', 'white') // this just needs to be here
-                .attr('stroke-opacity', 0)
-                .attr('stroke-width', 10)
-                .style("cursor", "pointer")
-                .on("click", function () {
-                    player.play();
-                })
-                .classed("RP-diph-bounds", true);
-            node.classed("lex-diph", true);
-        }
+    //     let node = positionLexset(lexset, pos, was);
+    //     if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
+    //         let player = new DiphthongScheduler(pos.start, pos.end);
+    //         node.append("path")
+    //             .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
+    //             .classed("diph-bounds", true)
+    //             // hidden - animated
+    //             .attr('stroke', 'white') // this just needs to be here
+    //             .attr('stroke-opacity', 0)
+    //             .attr('stroke-width', 10)
+    //             .style("cursor", "pointer")
+    //             .on("click", function () {
+    //                 player.play();
+    //             })
+    //             .classed("RP-diph-bounds", true);
+    //         node.classed("lex-diph", true);
+    //     }
             
         
-    }
-    RP_diphs = true;
-    d3.selectAll(".RP-diph-bounds")
-        .classed("hidden", !enable);
+    // }
+    // RP_diphs = true;
+    // d3.selectAll(".RP-diph-bounds")
+    //     .classed("hidden", !enable);
 
 }
 function toggleTrapezoid(enable?: boolean) {

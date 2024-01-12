@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Diphthong, isRhotic, AdjustedVowel, Vowels, AdjustedPosition } from './vowels';
+import { Diphthong, isRhotic, AdjustedVowel, Vowels, AdjustedPosition, isAdjustedPosition } from './vowels';
 import { DiphthongScheduler } from './synthesis';
 import { positionDiphText } from './positioning';
 import { loadSnapshot } from './snapshot';
@@ -44,38 +44,104 @@ export type Lexsets = Map<string, LexicalSet>;
 export let lexsetData: Lexsets = new Map();
 
 // let lexsetPositions: Map<string, PositionedVowel> = new Map();
+export function updateLexsets(lexsetData: Lexsets, show: boolean) {
+    let update = d3.select("#svg-lex")
+        .selectAll("g")
+        .data([...lexsetData.values()]);
+    
+    let paths = update.select("path.lex-path");
+    paths.attr("marker-end", function (lexset) {
+        if(lexset.position instanceof Diphthong) {
+            return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
+        }
+        return null;
+    });
+    
+    update.select("circle.lex-circle")
+        .attr("alt", lexset => lexset.name)
+        .transition().duration(200)
+        .attr("r", lexset => lexset.position instanceof Diphthong ? 0 : 20) 
+        // animated, as required when changing from diph to mono
+        .filter(lexset => isAdjustedPosition(lexset.position))
+        .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
+        .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
+        .on("end", function(lexset) {
+            if(lexset.position instanceof Diphthong) {
+                d3.select(this).classed("hidden", true);
+            }
+        });
+    
+    update.each(function(lexset) {
+        d3.select(this).classed("lex-diph", lexset.position instanceof Diphthong);        
+    });
+        
+    paths.each(function(lexset) {
+            
+        let isdiph = lexset.position instanceof Diphthong;
+        let path = d3.select(this).transition().duration(500);
+        path.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
+        if (isdiph) {
+            let diph = lexset.position as Diphthong;
+            let start = [diph.start.x, diph.start.y] as [number, number];
+            let end = [diph.end.x, diph.end.y] as [number, number];
+            path.attr("d", d3.line()([start, end]));
+        
+        } else if(isAdjustedPosition(lexset.position)) {
+            let pos = lexset.position as AdjustedPosition;
+            path.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]));
+        }
+    });
+        
+    let text = update.select("text.lex-text")
+        // .classed("hidden", !show)
+        .transition().duration(300)
+        // .style("opacity", show ? "1" : "0"); // animated
+        
+    text.filter(lexset => isAdjustedPosition(lexset.position))
+        .attr("x", lexset => (lexset.position as AdjustedPosition).x)
+        .attr("y", lexset => (lexset.position as AdjustedPosition).y)
+        .attr('transform', lexset => {
+            let pos = lexset.position as AdjustedPosition;
+            return `translate(${pos.dx + 5}, ${pos.dy + 10})`;
+        });
+    
+    text.filter(lexset => lexset.position instanceof Diphthong)
+        .each(function(lexset) {
+            let diph = lexset.position as Diphthong;
+            let [rotation, midpoint] = positionDiphText(diph);
+            d3.select(this)
+                .classed("lex-diph-text", true)
+                .transition().duration(300)
+                .attr("x", midpoint[0])
+                .attr("y", midpoint[1])
+                .attr("transform",
+                    `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`);
+        });
+    
+    // animate the bound
+    update.select(".diph-bounds")
+        .transition()
+        .duration(500)
+        .attr('d', function(lexset){
+            let diph = lexset.position as Diphthong;
+            let start = [diph.start.x, diph.start.y] as [number, number];
+            let end = [diph.end.x, diph.end.y] as [number, number];
+            return d3.line()([start, end]);
+        });
+                
+                
+        
+}
 
 export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
     vowelData: Vowels) {
 
     // load lexical sets
     d3.tsv("lexsets.tsv").then((data) => {
-        // let _RPbuilder: AdjustedPosition[] = [];
-        // let _GAbuilder: AdjustedPosition[] = [];
         data.forEach((d: any, idx: number) => {
             let lex = new LexicalSet();
             lex.name = d["Name"];
-            // let RP: (Vowel | Diphthong) = vowelFromString(d["RP"], vowelData)!; 
-            // // most of these will only have 1 element
-            // let GA: (Vowel | Diphthong) = vowelFromString(d["GA"], vowelData)!;
-            
-            // // position
-            // if(RP instanceof Diphthong) {
-            //     lex.RP = RP;
-            // } else {
-            //     lex.RP = adjustVowel(RP, _RPbuilder); // , ...RPs.slice(1)];
-            //     _RPbuilder.push(lex.RP);
-            // }
-            
-            // if(GA instanceof Diphthong) {
-            //     lex.GA = GA;
-            // } else {
-            //     let GA_positioned = adjustVowel(GA, _GAbuilder);
-            //     lex.GA = GA_positioned; // , ...GAs.slice(1)];
-            //     _GAbuilder.push(GA_positioned);
-            // }
             lex.examples = d['Examples'].split(', ');
-
             lex.checked = idx < 8; // KIT through CLOTH
             lex.free = 8 <= idx && idx < 13; // NURSE through THOUGHT
             lex.diphthong = 13 <= idx && idx < 18; // GOAT through MOUTH
@@ -94,9 +160,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         });
         console.log('lexical sets:', lexsetData);
 
-        // place behind, https://stackoverflow.com/a/36792669
-        let nodes = svg.insert('g', "#svg-vowels")
-            .attr("id", "svg-lex")
+        let nodes = svg.select("#svg-lex")
             .selectAll("foo")
             .data([...lexsetData.values()])
             .enter()
@@ -104,29 +168,14 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
 
         const curve = d3.line();
         
-
-        
         // for(let lexset of lexsetData.values()) {
             // let node = gs.append("g")
             //     .classed(`lex-${lexset.name}`, true);
-        nodes.each(function(lexset, idx) {
+        nodes.each(function(lexset) {
             this.classList.add(`lex-${lexset.name}`);
-        });
             
-        // path, which for monophthongs is just a dot
-        let paths = nodes.append("path")
-            .classed("lex-path", true)
-            .attr('stroke', lexset => lexset.rhotic ? 'darkorchid' : '#3b3bb3')
-            .attr('stroke-dasharray', '10,10');
-        
-        // let diphs = nodes.filter(lexset => lexset.GA instanceof Diphthong);
-        let monos = nodes.filter(lexset => lexset.GA instanceof AdjustedVowel);
-        // diphs.classed("lex-diph", true);
-        // monos.classed("lex-monophthong", true);
-        
-        nodes.each(function(lexset, idx) {
             let ele = lexset.GA;
-            if(ele instanceof Diphthong) {
+            if (ele instanceof Diphthong) {
                 this.classList.add("lex-diph");
             } else if (ele instanceof AdjustedVowel) {
                 // pass
@@ -136,7 +185,17 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             }
             lexset.position = ele;
         });
+            
+        // path, which for monophthongs is just a dot
+        let paths = nodes.append("path")
+            .classed("lex-path", true)
+            .attr('stroke', lexset => lexset.rhotic ? 'darkorchid' : '#3b3bb3')
+            .attr('stroke-dasharray', '10,10');
         
+        // let diphs = nodes.filter(lexset => lexset.GA instanceof Diphthong);
+        // let monos = nodes.filter(lexset => lexset.GA instanceof AdjustedVowel);
+        // diphs.classed("lex-diph", true);
+        // monos.classed("lex-monophthong", true);
         paths.attr("marker-end", function (lexset) {
             if(lexset.position instanceof Diphthong) {
                 return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
@@ -144,12 +203,13 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             return null;
         });
         
-        monos.append("circle")
+        nodes.append("circle")
             .classed("lex-circle", true)
+            .style("fill", "#69b3a222")
+            .classed("hidden", lexset => lexset.position instanceof Diphthong)
             .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
             .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
             .attr("r", 0) // animated
-            .style("fill", "#69b3a222")
             .attr("alt", lexset => lexset.name);
         
         paths.attr('stroke-opacity', lexset => 
@@ -163,7 +223,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             .classed("lex-rhotic", lexset => lexset.rhotic!);
         
         // text
-        let positionLexset = function(lexset: LexicalSet, idx: number) {
+        let positionLexset = function(lexset: LexicalSet) {
             let node = d3.select(this);
             // console.log('processing ', lexset.name);
             let path = node.select("path");
@@ -183,21 +243,8 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
             if (diph) {
                 start = [diph.start.x, diph.start.y] as [number, number];
                 end = [diph.end.x, diph.end.y] as [number, number];
-                // path.attr("marker-end", lexset.rhotic ?
-                //     "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
-                // node.classed("lex-diph", true);
-                // lexset.position = diph;
             } else if (pos) {
                 start = end = [pos.x, pos.y] as [number, number];
-                // plot circles for monophthongs
-                // node.append("circle")
-                //     .classed("lex-circle", true)
-                //     .attr("cx", pos.x)
-                //     .attr("cy", pos.y)
-                //     .attr("r", 0) // animated
-                //     .style("fill", "#69b3a222")
-                //     .attr("alt", lexset.name);
-                // lexset.position = pos;
             } else {
                 return;
             }
@@ -214,15 +261,10 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
                     .attr("transform",
                         `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`);
             } else if (pos) {
-                path.attr("d", curve([start, start]));
                 text.attr("x", pos.x)
                     .attr("y", pos.y)
                     .attr('transform',
                         `translate(${pos.dx + 5}, ${pos.dy + 10})`);
-                    // .classed("hidden", true)
-                    // .style("opacity", "0") // animated
-                    // .text(lexset.name)
-                    // .classed("lex-rhotic", lexset.rhotic!);
             }
             // the circle and text have the same x/y, but the text just has an offset
 
@@ -251,9 +293,6 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         // the circle and text have the same x/y, but the text just has an offset
         
         nodes.each(positionLexset);
-            
-            
-            
         
         // diphthongs
     });
