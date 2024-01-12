@@ -5,6 +5,7 @@ import { lexsetData } from './lexsets';
 import { positionLexset, repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { DiphthongScheduler } from './synthesis';
+import { toggleGVS } from './gvs';
 
 export enum Tab {
     HOME = 1,
@@ -12,7 +13,7 @@ export enum Tab {
     GVS = 3,
     MERGERS = 4
 }
-function enableTab(tab: Tab, enable: boolean) {
+function unblockTab(tab: Tab, enable: boolean) {
     let inp = document.getElementById(`radio-${tab}`) as HTMLInputElement;
     let label = inp.nextElementSibling as HTMLLabelElement;
     inp.disabled = !enable;
@@ -36,6 +37,9 @@ export function toggle(key: string, enable?: boolean) {
             break;
         case 'trapezoid':
             toggleTrapezoid(enable);
+            break;
+        case 'GVS':
+            toggleGVS(enable);
             break;
         default:
             console.error("Unknown toggle key: " + key);
@@ -64,7 +68,7 @@ function isLexsetMode(tab?: Tab) {
     if(tab === undefined) {
         tab = activeTab;
     }
-    return tab !== Tab.HOME;
+    return tab !== Tab.HOME && tab !== Tab.GVS;
 }
 function toggleDiphthongs(enable?: boolean) {
     if (enable === undefined) {
@@ -192,6 +196,14 @@ function enterTab(tab: Tab, from: Tab) {
         console.log("toggling lexsets");
         toggleLexsets(isLexsetMode(tab));
     }
+    if(tab === Tab.GVS) {
+        for (let x of document.getElementsByClassName("gvs-only")) x.classList.remove("hidden");
+        toggleGVS(true);
+    }
+    if(from === Tab.GVS) {
+        for (let x of document.getElementsByClassName("gvs-only")) x.classList.add("hidden");
+        toggleGVS(false);
+    }
     activeTab = tab;
 }
 export function recalculateActiveTab() {
@@ -275,10 +287,10 @@ function toggleTrapezoid(enable?: boolean) {
         // take away the frontier
         d3.selectAll("#frontier").classed("hidden", true);
         
-        let label = enableTab(Tab.LEXSETS, false);
-        
+        let label = unblockTab(Tab.LEXSETS, false);
         label.title = "Lexical sets are not yet supported in trapezoid view";
-
+        label = unblockTab(Tab.GVS, false);
+        label.title = "Great Vowel Shift is not yet supported in trapezoid view";
         
     } else {
         for(let vowel of Object.values(vowelData)) {
@@ -291,8 +303,11 @@ function toggleTrapezoid(enable?: boolean) {
         // bring back the frontier
         d3.selectAll("#frontier").classed("hidden", false);
 
-        let label = enableTab(Tab.LEXSETS, true);
+        let label = unblockTab(Tab.LEXSETS, true);
+        label.title = "";
+        label = unblockTab(Tab.GVS, true);
         label.title = "";
 
     }
 }
+

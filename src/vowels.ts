@@ -4,7 +4,7 @@ export interface AdjustedPosition {
     dx: number;
     dy: number;
 }
-export class Vowel {
+export interface Vowel {
     filename: string;
     symbol: string;
     F1: number;
@@ -16,46 +16,49 @@ export class Vowel {
     openness: number;
     x: number;
     y: number;
-    constructor(filename: string, symbol: string, F1: number, F2: number, F3: number, x: number, y: number) {
-        this.filename = filename;
-        this.symbol = symbol;
-        this.F1 = F1;
-        this.F2 = F2;
-        this.F3 = F3;
-        this.rounded = filename.includes('_rounded');
-        this.show = filename !== 'hidden.ogg.mp3';
-        
-        let xi = 0;
-        if (filename.includes("_front_")) {
-            xi = 4;
-        } else if (filename.includes("_near-front_")) {
-            xi = 3;
-        } else if (filename.includes("_central_")) {
-            xi = 2;
-        } else if (filename.includes("_near-back_")) {
-            xi = 1;
-        }
-        let yi = 0;
-        if (filename.startsWith("Open_") || filename.startsWith("PR-open_")) {
-            yi = 6;
-        } else if (filename.startsWith("Near-open_")) {
-            yi = 5;
-        } else if (filename.startsWith("Open-mid_") || filename.startsWith("PR-open-mid_")) {
-            yi = 4;
-        } else if (filename.startsWith("Mid_")) {
-            yi = 3;
-        } else if (filename.startsWith("Close-mid_")) {
-            yi = 2;
-        } else if (filename.startsWith("Near-close_")) {
-            yi = 1;
-        }
-        this.frontness = xi;
-        this.openness = yi;
-        
-        this.x = x;
-        this.y = y;
-        
+}
+
+export function makeVowel(filename: string, symbol: string, F1: number, F2: number, F3: number, x: number, y: number) {
+    let v = {} as Vowel;    
+    v.filename = filename;
+    v.symbol = symbol;
+    v.F1 = F1;
+    v.F2 = F2;
+    v.F3 = F3;
+    v.rounded = filename.includes('_rounded');
+    v.show = filename !== 'hidden.ogg.mp3';
+    
+    let xi = 0;
+    if (filename.includes("_front_")) {
+        xi = 4;
+    } else if (filename.includes("_near-front_")) {
+        xi = 3;
+    } else if (filename.includes("_central_")) {
+        xi = 2;
+    } else if (filename.includes("_near-back_")) {
+        xi = 1;
     }
+    let yi = 0;
+    if (filename.startsWith("Open_") || filename.startsWith("PR-open_")) {
+        yi = 6;
+    } else if (filename.startsWith("Near-open_")) {
+        yi = 5;
+    } else if (filename.startsWith("Open-mid_") || filename.startsWith("PR-open-mid_")) {
+        yi = 4;
+    } else if (filename.startsWith("Mid_")) {
+        yi = 3;
+    } else if (filename.startsWith("Close-mid_")) {
+        yi = 2;
+    } else if (filename.startsWith("Near-close_")) {
+        yi = 1;
+    }
+    v.frontness = xi;
+    v.openness = yi;
+    
+    v.x = x;
+    v.y = y;
+    return v;
+    
 }
 export class AdjustedVowel<T extends Vowel = Vowel> implements AdjustedPosition {
     vowel: T;
@@ -141,15 +144,15 @@ export class SuffixedVowel implements Vowel {
 
 }
 
+let diacritics = '\u02F3\u0325\u0324\u032A\u02CC\u0329\u02EC\u032C\u02F7\u0330\u02FD\u033A\u032F\u02B0\u033C\u033B\u02D2\u0339\u02B7\u0303\u02B2\u02D3\u031C\u02D6\u031F\u207F\u00A8\u0308\u02E0\u02CD\u0320\u02E1\u02DF\u033D\u02E4\uAB6A\u0318\u02FA\u031A\u02D4\u031D\u0334\uAB6B\u0319\u02DE\u02D5\u031E\u02D0'.split('');
 
-
-export function vowelFromString(s: string, formantData: Record<string, Vowel>): 
+export function vowelFromString(s: string, vowelData: Vowels): 
         Vowel | SuffixedVowel | Diphthong | undefined {
     if (s.length === 1) {
-        return formantData[s]; // monophthong
+        return vowelData[s]; // monophthong
     }
     if (s.length === 2) {
-        let first = formantData[s[0]];
+        let first = vowelData[s[0]];
         if(first === undefined) {
             return undefined;
         }
@@ -159,11 +162,22 @@ export function vowelFromString(s: string, formantData: Record<string, Vowel>):
         if (s[1] === 'ː') {
             return new SuffixedVowel(first, 'ː');
         }
-        let second = formantData[s[1]];
+        if(diacritics.includes(s[1])) {
+            return new SuffixedVowel(first, s[1]);
+        }
+        let second = vowelData[s[1]];
         if(second === undefined) {
             return undefined;
         }
         return new Diphthong(first, second, s);
+    } else if (s.length === 3) {
+        let recurse = vowelFromString(s.slice(0, 2), vowelData);
+        if(!recurse) return undefined;
+        if(recurse instanceof Diphthong) return recurse;
+        if(s[2] === 'r' || s[2] === 'ː' || diacritics.includes(s[2])) {
+            return new SuffixedVowel(recurse, s[2]);
+        }
+        return recurse;
     }
     throw new Error("Invalid string: " + s);
 }
@@ -207,6 +221,11 @@ export function isPosition(x: any): x is Position {
         x.x !== undefined && x.y !== undefined;
 }
 
+export function isAdjustedPosition(x: any): x is AdjustedPosition {
+    return x !== undefined && 
+        x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
+}
+
 export function isVowel(x: any): x is Vowel {
     return x !== undefined && x.filename !== undefined && x.symbol !== undefined
         && x.F1 !== undefined && x.F2 !== undefined && x.F3 !== undefined && isPosition(x);
@@ -217,4 +236,26 @@ export type MixedVowel = Vowel | Diphthong;
 export enum VowelPositionState {
     FORMANT = 0,
     TRAPEZOID = 1
+}
+
+export type Vowels = Record<string, Vowel>;
+
+
+export class PositionOnly implements Vowel{
+    filename: string = '';
+    symbol: string = '';
+    F1: number = 0;
+    F2: number = 0;
+    F3: number = 0;
+    rounded: boolean = false;
+    show: boolean = false;
+    frontness: number = 0;
+    openness: number = 0;
+    x: number;
+    y: number;
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+    
 }

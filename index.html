@@ -20,8 +20,8 @@
             <label class="tab" for="radio-1">Home</label>
             <input type="radio" id="radio-2" name="tabs" />
             <label class="tab" for="radio-2">Lexical Sets</label>
-            <input type="radio" id="radio-3" name="tabs" disabled/>
-            <label class="tab blocked" for="radio-3">Great Vowel Shift</label>
+            <input type="radio" id="radio-3" name="tabs"/>
+            <label class="tab" for="radio-3">Great Vowel Shift</label>
             <input type="radio" id="radio-4" name="tabs" disabled/>
             <label class="tab blocked" for="radio-4">Mergers</label>
             <span class="glider"></span>
@@ -94,13 +94,33 @@
             
           </div>
           <div class="lex-only hidden">
-            <input type="checkbox" id="toggle-rp" onchange="
-                                                      toggle('RP');">
+            <input type="checkbox" id="toggle-rp" onchange="toggle('RP');">
             RP<br>
             <h3 style="margin-bottom: 0;">Lexical Set Key</h3>
             <span class="legend-sq lex-rhotic"></span>
             <span>Rhotic</span>
             
+          </div>
+          
+          <div class="gvs-only hidden">
+            <h3 style="margin-bottom: 0;">Great Vowel Shift Key</h3>
+            
+            <!-- <div class="range" style="--step:50; --min:1400; --max:2000"> -->
+              <input type="range" min="1400" max="2000" value="2000" step="50" class="slider" id="gvs-slider"
+              list="markers" style="width: 100%">
+              <datalist id="markers">
+                <option value="1400" label="1400"></option>
+                <option value="1500" label="1500"></option>
+                <option value="1600" label="1600"></option>
+                <option value="1700" label="1700"></option>
+                <option value="1800" label="1800"></option>
+                <option value="1900" label="1900"></option>
+                <option value="2000" label="2000"></option>
+
+              </datalist>
+              
+            <!-- </div> -->
+          
           </div>
         </div>
         

@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { LexicalSet, lexsetData } from "./lexsets";
-import { AdjustedVowel, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
+import { AdjustedPosition, AdjustedVowel, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     let dy = diph.end.y - diph.start.y;
@@ -18,7 +18,7 @@ export function positionDiphText(diph: Diphthong): [number, [number, number]] {
 }
 
 
-export function positionLexset(lexset: LexicalSet, pos: AdjustedVowel | Diphthong, was?: AdjustedVowel | Diphthong): 
+export function positionLexset(lexset: LexicalSet, pos: AdjustedPosition | Diphthong, was?: AdjustedPosition | Diphthong): 
     d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
     let node = d3.select(`.lex-${lexset.name}`);
 
@@ -166,39 +166,3 @@ export function repositionVowels(
     
 }
 
-
-export class LexSnapshot {
-    data: Map<LexicalSet, AdjustedVowel | Diphthong>;
-    constructor(data: Map<LexicalSet, AdjustedVowel | Diphthong>) {
-        this.data = data;
-    }
-    computeAdjustments(pos: Vowel, checkCollisionsWith?: Iterable<AdjustedVowel>): 
-        AdjustedVowel {
-        if(checkCollisionsWith === undefined) {
-            checkCollisionsWith = [];
-            for(let pos of this.data.values()) {
-                if(pos === undefined) continue;
-                if(pos instanceof Diphthong) continue;
-                (checkCollisionsWith as AdjustedVowel[]).push(pos);
-            }
-        }
-        
-        let atx = pos.x;
-        let aty = pos.y;
-        let textx = atx;
-        let texty = aty;
-        // prevent at same position
-        for (let pos of checkCollisionsWith) {
-            if (Math.abs(pos.vowel.x + pos.dx - textx) < 10 && Math.abs(pos.vowel.y + pos.dy - texty) < 10) {
-                texty += 10; // works since duplicates are handled ascending
-            }
-        }
-        let out = new AdjustedVowel(pos, 
-            textx - atx,
-            texty - aty
-        );
-        return out;
-        
-        
-    }
-}

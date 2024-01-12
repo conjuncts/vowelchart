@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggle, hydrateTabs } from './tabs';
 import { loadLexicalSets } from './lexsets';
-import { diphs, Vowel } from './vowels';
+import { diphs, Vowels, Vowel, makeVowel } from './vowels';
 (window as any).toggle = toggle;
 
 hydrateTabs();
@@ -67,7 +67,7 @@ svg.append("rect")
 
 
 // Read the data
-export let vowelData: Record<string, Vowel> = {};
+export let vowelData: Vowels = {};
 
 export let d3gs: d3.Selection<SVGGElement, Vowel, SVGGElement, unknown>;
 
@@ -75,7 +75,7 @@ d3.tsv("formants.tsv").then(function (data) {
     // put data
     data.forEach((d: any) => {
         let [F1, F2, F3] = [+d.F1, +d.F2, +d.F3];
-        let v = new Vowel(d.filename, d.symbol, F1, F2, F3, x(F2), y(F1));
+        let v = makeVowel(d.filename, d.symbol, F1, F2, F3, x(F2), y(F1));
         vowelData[v.symbol] = v;
     });
     console.log('vowel formants:', vowelData);
@@ -100,7 +100,7 @@ d3.tsv("formants.tsv").then(function (data) {
     // begin data points
     let gs = d3gs = svg.append('g')
         .attr("id", "svg-vowels")
-        .selectAll("text")
+        .selectAll("foo")
         .data(Object.values(vowelData).filter(d => d.show))
         .enter()
         .append("g");
@@ -115,8 +115,8 @@ d3.tsv("formants.tsv").then(function (data) {
     // visible vowels
     gs.append("circle")
         .classed("vowel-circle", true)
-        .attr("cx", function (d) { return d.x; })
-        .attr("cy", function (d) { return d.y; })
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y)
         .attr("r", 5)
         .style("pointer-events", "none")
         .style("fill", "#69b3a2")
@@ -125,13 +125,12 @@ d3.tsv("formants.tsv").then(function (data) {
     // clickable vowels
     gs.append("circle") 
         .classed("vowel-bounds", true)
-        .attr("cx", function (d) { return d.x; })
-        .attr("cy", function (d) { return d.y; })
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y)
         .attr("r", 8)
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
-        .on("click", function () {
-            var d = d3.select(this).datum() as Vowel;
+        .on("click", function (event, d) {
             var audio = new Audio("./vowels/" + d.filename);
             if (enableReferenceVowels) {
                 audio.play();
