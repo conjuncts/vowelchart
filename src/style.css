@@ -302,8 +302,8 @@ input[id=radio-4]:checked~.glider {
 
 
 .vowel-text, .lex-text, .lex-diph-text, .lex-path {
-  user-select: none;
-  pointer-events: none;
+  /* user-select: none; */
+  /* pointer-events: none; */
 }
 .lex-text, .lex-diph-text {
   font-variant: all-small-caps;
@@ -316,11 +316,11 @@ input[id=radio-4]:checked~.glider {
   fill: darkorchid;
   background-color: darkorchid;
 }
-.lex-diph-text.lex-diph-text, .lex-path, .diph-arrowhead {
+.lex-diph-text.lex-diph-text, .lex-path, .diph-tog-arrowhead {
   fill: #3b3bb3;
 }
 
-.hidden, .lex-hidden, .diph-hidden {
+.hidden, .lex-hidden, .diph-hidden, .lex-unused {
   display: none;
 }
 

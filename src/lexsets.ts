@@ -3,7 +3,7 @@ import { Diphthong, isRhotic, AdjustedVowel, Vowels, AdjustedPosition, isAdjuste
 import { DiphthongScheduler } from './synthesis';
 import { positionDiphText } from './positioning';
 import { LexSnapshot, loadSnapshot } from './snapshot';
-import { fadeInOut } from './transition';
+import { fadeInOut, fadeInOutAttr } from './transition';
 
 export class LexicalSet {
     name: string;
@@ -54,27 +54,30 @@ export let snapshots: SnapshotHolder = {};
 type d3SorT = d3.Selection<d3.BaseType, LexicalSet, d3.BaseType, unknown> | 
 d3.Transition<d3.BaseType, LexicalSet, d3.BaseType, unknown>;
 
-export function toggleLexsetVisibility(enable: boolean, diphsChecked: boolean) {
-    d3.selectAll('.lex-circle').transition()
-        .duration(200)
-        .attr("r", enable ? 20 : 0);
+export function toggleLexsetVisibility(enable: boolean) {
+    // d3.selectAll('.lex-circle').transition()
+    //     .duration(200)
+    //     .attr("r", enable ? 20 : 0);
+    fadeInOutAttr(enable, d3.selectAll('.lex-circle'), "lex-hidden", "r", 0, 20, 200);
 
     // toggle lexset text
     // if diphs are enabled, we need to toggle the diphs
     // if not, we must exclude the diphs
-    let selector = diphsChecked ? '.lex-text' : '.lex-text:not(.lex-diph-text)';
-    let x = d3.selectAll(selector);
-    if (enable) {
-        x.classed("lex-hidden", false);
-    }
-    let y = x.transition()
-        .duration(200)
-        .style("opacity", enable ? "1" : "0");
-    if (!enable) {
-        y.on("end", function () {
-            d3.select(this).classed("lex-hidden", true);
-        });
-    }
+    
+    fadeInOut(enable, d3.selectAll('.lex-text'), "lex-hidden", "opacity", 0, 1, 200);
+    // let selector = diphsChecked ? '.lex-text' : '.lex-text:not(.lex-diph-text)';
+    // let x = d3.selectAll(selector);
+    // if (enable) {
+    //     x.classed("lex-hidden", false);
+    // }
+    // let y = x.transition()
+    //     .duration(200)
+    //     .style("opacity", enable ? "1" : "0");
+    // if (!enable) {
+    //     y.on("end", function () {
+    //         d3.select(this).classed("lex-hidden", true);
+    //     });
+    // }
 
     // toggle vowel text
     if (enable) {
@@ -131,7 +134,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         lexset.position = ele;
     });
     
-    // new paths
+    // new paths. pahts are exception to diph-togglable
     let newP = newNodes.append("path")
         .classed("lex-path", true)
         .attr('stroke-dasharray', '10,10')
@@ -142,12 +145,18 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             if (isdiph) {
                 let diph = lexset.position as Diphthong;
                 path.attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]));
-                if(!showDiphs) path.classed("diph-hidden", true);
+                // if(!showDiphs) path.classed("diph-hidden", true);
             } else if (isAdjustedPosition(lexset.position)) {
                 let pos = lexset.position as AdjustedPosition;
                 path.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]));
             }
             path.attr('stroke', lexset.rhotic ? 'darkorchid' : '#3b3bb3');
+        })
+        .attr("marker-end", function (lexset) {
+            if (lexset.position instanceof Diphthong) {
+                return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
+            }
+            return null;
         });
     if(show) {
         newP.transition().duration(transition * 5/2)
@@ -159,7 +168,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     let newC = newNodes.append("circle")
         .classed("lex-circle", true)
         .style("fill", "#69b3a222")
-        .classed("diph-hidden", lexset => lexset.position instanceof Diphthong)
+        .classed("lex-unused", lexset => lexset.position instanceof Diphthong)
         .filter(lexset => isAdjustedPosition(lexset.position))
         .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
         .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
@@ -172,6 +181,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     // new text
     let newT = newNodes.append("text")
         .classed("lex-text", true)
+        .classed("diph-togglable", lexset => lexset.position instanceof Diphthong)
         .style("opacity", 0) // animated
         .each(function (lexset) {
             let x;
@@ -180,7 +190,8 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             if(lexset.position instanceof Diphthong) {
                 let [rotation, midpoint] = positionDiphText(lexset.position);
                 d3.select(this)
-                    .classed("lex-diph-text", true);
+                    .classed("lex-diph-text", true)
+                    .classed("diph-togglable", true);
                 if(!showDiphs) d3.select(this).classed("diph-hidden", true);
                 x = midpoint[0];
                 y = midpoint[1];
@@ -238,20 +249,21 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     });
     
     // update paths
-    paths.each(function(lexset) {
+    paths.each(function(lexset) { // path is exception to diphTogglable
             
         let isdiph = lexset.position instanceof Diphthong;
-        let path = d3.select(this) as 
+        let path = d3.select(this);
+        let anim = path as 
             d3.Transition<d3.BaseType, unknown, null, undefined> | d3.Selection<d3.BaseType, unknown, null, undefined>;
-        if (show) path = path.transition().duration(transition * 5/2);
-        path.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
+        if (show) anim = path.transition().duration(transition * 5/2);
+        anim.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
         if (isdiph) {
             let diph = lexset.position as Diphthong;
-            path.attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]));
-        
+            anim.attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]));
         } else if(isAdjustedPosition(lexset.position)) {
             let pos = lexset.position as AdjustedPosition;
-            path.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]));
+            anim.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]));
+            
         }
     });
     
@@ -260,7 +272,9 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     // update text
     let text = update.select("text.lex-text")
         // .classed("hidden", !show)
-        .text(lexset => lexset.displayName);
+        .text(lexset => lexset.displayName)
+        .classed("diph-togglable", lexset => lexset.position instanceof Diphthong);
+
         // .classed("lex-rhotic", lexset => lexset.rhotic!)
     let textT = text.transition().duration(transition * 3/2)
         .style("opacity", lexset => {
@@ -282,6 +296,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             let [rotation, midpoint] = positionDiphText(diph);
             d3.select(this)
                 .classed("lex-diph-text", true)
+                .classed("diph-togglable", true)
                 .transition().duration(transition * 3/2)
                 .attr("x", midpoint[0])
                 .attr("y", midpoint[1])
@@ -290,12 +305,10 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         });
     
     if (!showDiphs) {
-        // if we are not showing diphs, we need to fade out the diphthongs when lex change
-        // as there can possibly be new diphthongs
-        fadeInOut(false, d3.selectAll('lex-diph-text'),
-            "diph-hidden", "opacity", 1, transition * 3 / 2);
-        fadeInOut(true, text.filter(lexset => !(lexset.position instanceof Diphthong)),
-            "diph-hidden", "opacity", 0, transition * 3 / 2);
+        fadeInOut(true, d3.select("#svg-lex").selectAll(".diph-hidden:not(.diph-togglable)"), "diph-hidden", "opacity", 
+        0, 1, transition * 3/2);
+        fadeInOut(false, d3.select("#svg-lex").selectAll(".diph-togglable"), "diph-hidden", "opacity", 
+        0, 0, transition * 3/2);
     }
     
     // animate the bound

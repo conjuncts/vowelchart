@@ -87,12 +87,15 @@ function toggleDiphthongs(enable?: boolean) {
         }
     }
     // animate the paths
-    fadeInOut(enable, d3.selectAll(".lex-path"), "diph-hidden", "stroke-opacity", 0.5, 200);
-    fadeInOut(enable, d3.selectAll(".diph-arrowhead"), "diph-hidden", "opacity", 0.5, 200);
+    fadeInOut(enable, d3.selectAll(".diph-tog-arrowhead"), "diph-hidden", "opacity", 0, 0.5, 200);
+    fadeInOut(enable, d3.selectAll(".diph-togglable"), "diph-hidden", "opacity", 0, 1, 200);
     
-    if(isLexsetMode()) {
-        toggleLexsetDiphs(enable);
-    }
+    fadeInOut(enable, d3.selectAll(".lex-path"), "diph-hidden", "stroke-opacity", 0, 0.5, 200);
+    // fadeInOut(enable, d3.selectAll(".diph-arrowhead"), "diph-hidden", "opacity", 0.5, 200);
+    
+    // if(isLexsetMode()) {
+    //     toggleLexsetDiphs(enable);
+    // }
 }
 
 function toggleLexsets(enable?: boolean) {
@@ -100,7 +103,7 @@ function toggleLexsets(enable?: boolean) {
         enable = isLexsetMode();
     }
 
-    toggleLexsetVisibility(enable, isDiphsChecked());
+    toggleLexsetVisibility(enable);
 }
 
 function toggleLexsetDiphs(enable: boolean) {

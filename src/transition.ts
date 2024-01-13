@@ -14,16 +14,40 @@ import * as d3 from "d3";
  * @param duration 
  */
 export function fadeInOut(enable: boolean, selection: d3.Selection<d3.BaseType, any, d3.BaseType, unknown>, hidingClass: string,
-    opacityAttr: string, maxOpacity: number, duration: number) {
+    opacityAttr: string, minOpacity: 0, maxOpacity: any, duration: number) {
     if (enable) {
         selection.filter('.' + hidingClass)
-            .attr(opacityAttr, 0)
+            // .attr(opacityAttr, minOpacity)
+            .style(opacityAttr, minOpacity)
             .classed(hidingClass, false);
     }
 
     let selectionE = selection.transition()
         .duration(duration)
-        .attr(opacityAttr, enable ? maxOpacity : 0);
+        // .attr(opacityAttr, enable ? maxOpacity : minOpacity)
+        .style(opacityAttr, enable ? maxOpacity : minOpacity);
+
+    if (!enable) {
+        selectionE.on("end", function () {
+            d3.select(this).classed(hidingClass, true);
+        });
+    }
+
+}
+
+export function fadeInOutAttr(enable: boolean, selection: d3.Selection<d3.BaseType, any, d3.BaseType, unknown>, hidingClass: string,
+    opacityAttr: string, minOpacity: 0, maxOpacity: any, duration: number) {
+    if (enable) {
+        selection.filter('.' + hidingClass)
+            // .attr(opacityAttr, minOpacity)
+            .style(opacityAttr, minOpacity)
+            .classed(hidingClass, false);
+    }
+
+    let selectionE = selection.transition()
+        .duration(duration)
+        // .attr(opacityAttr, enable ? maxOpacity : minOpacity)
+        .attr(opacityAttr, enable ? maxOpacity : minOpacity);
 
     if (!enable) {
         selectionE.on("end", function () {
