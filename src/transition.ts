@@ -7,6 +7,8 @@ import * as d3 from "d3";
  * If there is an additional hiding class, this will create a transition but nothing will happen because the element is hidden
  * --> a bit of wasted computation
  * @param enable Whether we wish to make the element visible or invisible; toggles the hidingClass accordingly
+ * 
+ * Caveat: there can only be one transition
  * @param selection 
  * @param hidingClass 
  * @param opacityAttr 

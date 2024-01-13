@@ -55,9 +55,7 @@ type d3SorT = d3.Selection<d3.BaseType, LexicalSet, d3.BaseType, unknown> |
 d3.Transition<d3.BaseType, LexicalSet, d3.BaseType, unknown>;
 
 export function toggleLexsetVisibility(enable: boolean) {
-    // d3.selectAll('.lex-circle').transition()
-    //     .duration(200)
-    //     .attr("r", enable ? 20 : 0);
+
     fadeInOutAttr(enable, d3.selectAll('.lex-circle'), "lex-hidden", "r", 0, 20, 200);
 
     // toggle lexset text
@@ -65,19 +63,6 @@ export function toggleLexsetVisibility(enable: boolean) {
     // if not, we must exclude the diphs
     
     fadeInOut(enable, d3.selectAll('.lex-text'), "lex-hidden", "opacity", 0, 1, 200);
-    // let selector = diphsChecked ? '.lex-text' : '.lex-text:not(.lex-diph-text)';
-    // let x = d3.selectAll(selector);
-    // if (enable) {
-    //     x.classed("lex-hidden", false);
-    // }
-    // let y = x.transition()
-    //     .duration(200)
-    //     .style("opacity", enable ? "1" : "0");
-    // if (!enable) {
-    //     y.on("end", function () {
-    //         d3.select(this).classed("lex-hidden", true);
-    //     });
-    // }
 
     // toggle vowel text
     if (enable) {
@@ -134,7 +119,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         lexset.position = ele;
     });
     
-    // new paths. pahts are exception to diph-togglable
+    // new paths. paths are exception to diph-togglable
     let newP = newNodes.append("path")
         .classed("lex-path", true)
         .attr('stroke-dasharray', '10,10')
@@ -181,7 +166,8 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     // new text
     let newT = newNodes.append("text")
         .classed("lex-text", true)
-        .classed("diph-togglable", lexset => lexset.position instanceof Diphthong)
+        .classed("diph-tog", lexset => lexset.position instanceof Diphthong)
+        .classed("diph-hidden", lexset => lexset.position instanceof Diphthong && !showDiphs)
         .style("opacity", 0) // animated
         .each(function (lexset) {
             let x;
@@ -189,10 +175,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             let transform;
             if(lexset.position instanceof Diphthong) {
                 let [rotation, midpoint] = positionDiphText(lexset.position);
-                d3.select(this)
-                    .classed("lex-diph-text", true)
-                    .classed("diph-togglable", true);
-                if(!showDiphs) d3.select(this).classed("diph-hidden", true);
+                // if(!showDiphs) d3.select(this).classed("diph-hidden", true);
                 x = midpoint[0];
                 y = midpoint[1];
                 transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
@@ -273,43 +256,38 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     let text = update.select("text.lex-text")
         // .classed("hidden", !show)
         .text(lexset => lexset.displayName)
-        .classed("diph-togglable", lexset => lexset.position instanceof Diphthong);
-
-        // .classed("lex-rhotic", lexset => lexset.rhotic!)
-    let textT = text.transition().duration(transition * 3/2)
-        .style("opacity", lexset => {
-            if(lexset.position instanceof Diphthong && !showDiphs) return 0;
-            return show ? 1 : 0;
-        }); // animated
-        
-    textT.filter(lexset => isAdjustedPosition(lexset.position))
-        .attr("x", lexset => (lexset.position as AdjustedPosition).x)
-        .attr("y", lexset => (lexset.position as AdjustedPosition).y)
-        .attr('transform', lexset => {
+        .classed("diph-tog", lexset => lexset.position instanceof Diphthong);
+    
+    text.each(function (lexset) {
+        let x;
+        let y;
+        let transform;
+        if (lexset.position instanceof Diphthong) {
+            let [rotation, midpoint] = positionDiphText(lexset.position);
+            // if (!showDiphs) d3.select(this).classed("diph-hidden", true);
+            x = midpoint[0];
+            y = midpoint[1];
+            transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
+        } else {
+            if(lexset.name === 'NEAR') {
+                console.log('readjusting');
+            }
             let pos = lexset.position as AdjustedPosition;
-            return `translate(${pos.dx + 5}, ${pos.dy + 10})`;
-        });
-    
-    textT.filter(lexset => lexset.position instanceof Diphthong)
-        .each(function(lexset) {
-            let diph = lexset.position as Diphthong;
-            let [rotation, midpoint] = positionDiphText(diph);
-            d3.select(this)
-                .classed("lex-diph-text", true)
-                .classed("diph-togglable", true)
-                .transition().duration(transition * 3/2)
-                .attr("x", midpoint[0])
-                .attr("y", midpoint[1])
-                .attr("transform",
-                    `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`);
-        });
-    
-    if (!showDiphs) {
-        fadeInOut(true, d3.select("#svg-lex").selectAll(".diph-hidden:not(.diph-togglable)"), "diph-hidden", "opacity", 
-        0, 1, transition * 3/2);
-        fadeInOut(false, d3.select("#svg-lex").selectAll(".diph-togglable"), "diph-hidden", "opacity", 
-        0, 0, transition * 3/2);
-    }
+            x = pos.x;
+            y = pos.y;
+            transform = `translate(${pos.dx + 5}, ${pos.dy + 10})`;
+            d3.select(this).classed("diph-hidden", false);
+        }
+        d3.select(this).transition().duration(transition * 3/2)
+            .style("opacity", show && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
+            .attr("x", x)
+            .attr("y", y)
+            .attr('transform', transform)
+            .text(lexset.displayName)
+            .on('end', function() {
+                d3.select(this).classed("diph-hidden", lexset.position instanceof Diphthong && !showDiphs);
+            });
+    });
     
     // animate the bound
     update.select(".diph-bounds")

@@ -316,7 +316,7 @@ input[id=radio-4]:checked~.glider {
   fill: darkorchid;
   background-color: darkorchid;
 }
-.lex-diph-text.lex-diph-text, .lex-path, .diph-tog-arrowhead {
+.lex-path, .diph-tog-arrowhead, .lex-text.diph-tog {
   fill: #3b3bb3;
 }
 

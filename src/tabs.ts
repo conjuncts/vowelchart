@@ -88,7 +88,7 @@ function toggleDiphthongs(enable?: boolean) {
     }
     // animate the paths
     fadeInOut(enable, d3.selectAll(".diph-tog-arrowhead"), "diph-hidden", "opacity", 0, 0.5, 200);
-    fadeInOut(enable, d3.selectAll(".diph-togglable"), "diph-hidden", "opacity", 0, 1, 200);
+    fadeInOut(enable, d3.selectAll(".diph-tog"), "diph-hidden", "opacity", 0, 1, 200);
     
     fadeInOut(enable, d3.selectAll(".lex-path"), "diph-hidden", "stroke-opacity", 0, 0.5, 200);
     // fadeInOut(enable, d3.selectAll(".diph-arrowhead"), "diph-hidden", "opacity", 0.5, 200);
@@ -106,19 +106,6 @@ function toggleLexsets(enable?: boolean) {
     toggleLexsetVisibility(enable);
 }
 
-function toggleLexsetDiphs(enable: boolean) {
-    // isDiphsChecked AND LexsetMode on
-    // d3.selectAll(".lex-diph-bounds")
-    //     .transition()
-    //     .duration(200)
-    //     .attr('stroke-width', enable ? 20 : 0);
-    
-    d3.selectAll(".lex-diph-text")
-        .transition()
-        .duration(200)
-        .style("opacity", enable ? "1" : "0");
-
-}
 let activeTab = Tab.HOME;
 export function hydrateTabs() {
     document.getElementById('radio-1')?.addEventListener('change', function () {
