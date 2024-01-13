@@ -4,9 +4,11 @@ import { AdjustedVowel, Diphthong, Vowel, isVowel, Vowels, vowelFromString, Adju
 
 
 export class LexSnapshot {
+    name: string;
     data: Map<LexicalSet, AdjustedPosition | Diphthong>;
-    constructor(data: Map<LexicalSet, AdjustedPosition | Diphthong>) {
+    constructor(data: Map<LexicalSet, AdjustedPosition | Diphthong>, name: string) {
         this.data = data;
+        this.name = name;
     }
     computeCollisions(v: Position, checkCollisionsWith?: Iterable<AdjustedPosition>) {
         if (checkCollisionsWith === undefined) {
@@ -72,7 +74,7 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
     for (let i = 0; i < keys.length; ++i) {
         let key = keys[i];
         if (data.columns.includes(key)) {
-            snapshots.push(new LexSnapshot(new Map()));
+            snapshots.push(new LexSnapshot(new Map(), key));
         } else {
             console.error("missing column", key);
             throw new Error("missing column");
@@ -194,10 +196,4 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
     console.log("snapshots: ", snapshots);
     return snapshots;
 
-}
-
-function applySnapshot(snapshot: LexSnapshot, lexsetData: Lexsets) {
-    for(let [lex, pos] of snapshot.data) {
-        lex.position = pos;
-    }
 }

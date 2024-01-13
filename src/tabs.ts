@@ -1,11 +1,12 @@
 
 import * as d3 from 'd3';
 import { AdjustedVowel, Diphthong, Vowel, VowelPositionState } from './vowels';
-import { lexsetData, updateLexsets } from './lexsets';
+import { lexsetData, toggleLexsetVisibility, updateLexsets } from './lexsets';
 import { positionLexset, repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { DiphthongScheduler } from './synthesis';
 import { toggleGVS } from './gvs';
+import { fadeInOut } from './transition';
 
 export enum Tab {
     HOME = 1,
@@ -68,8 +69,10 @@ function isLexsetMode(tab?: Tab) {
     if(tab === undefined) {
         tab = activeTab;
     }
-    return tab !== Tab.HOME && tab !== Tab.GVS;
+    return tab !== Tab.HOME; // && tab !== Tab.GVS;
 }
+
+
 function toggleDiphthongs(enable?: boolean) {
     if (enable === undefined) {
         enable = isDiphsChecked();
@@ -78,20 +81,15 @@ function toggleDiphthongs(enable?: boolean) {
     let bounds = document.querySelectorAll(".diph-bounds") as unknown as SVGCircleElement[];
     for (let bound of bounds) {
         if (enable) {
-            bound.classList.remove("hidden");
+            bound.classList.remove("diph-hidden");
         } else {
-            bound.classList.add("hidden");
+            bound.classList.add("diph-hidden");
         }
     }
     // animate the paths
-    d3.selectAll(".lex-path")
-        .transition()
-        .duration(200)
-        .attr('stroke-opacity', enable ? 0.5 : 0);
-    d3.selectAll(".diph-arrowhead")
-        .transition()
-        .duration(200)
-        .attr('opacity', enable ? 0.5 : 0);
+    fadeInOut(enable, d3.selectAll(".lex-path"), "diph-hidden", "stroke-opacity", 0.5, 200);
+    fadeInOut(enable, d3.selectAll(".diph-arrowhead"), "diph-hidden", "opacity", 0.5, 200);
+    
     if(isLexsetMode()) {
         toggleLexsetDiphs(enable);
     }
@@ -102,45 +100,7 @@ function toggleLexsets(enable?: boolean) {
         enable = isLexsetMode();
     }
 
-    d3.selectAll('.lex-circle').transition()
-        .duration(200)
-        .attr("r", enable ? 20 : 0);
-        
-    // toggle lexset text
-    // if diphs are enabled, we need to toggle the diphs
-    // if not, we must exclude the diphs
-    let selector = isDiphsChecked() ? '.lex-text' : '.lex-text:not(.lex-diph-text)';
-    let x = d3.selectAll(selector);
-    if(enable) {
-        x.classed("hidden", false);
-    }
-    let y = x.transition()
-        .duration(200)
-        .style("opacity", enable ? "1" : "0");
-    if(!enable) {
-        y.on("end", function () {
-            d3.select(this).classed("hidden", true);
-        });
-    }
-    
-    // toggle vowel text
-    if (enable) {
-        setTimeout(() => {
-            d3.selectAll(".vowel-text").style("fill", "#A9A9A9");
-        }, 100);
-        //     .style("fill", "#A9A9A9"); // "#4B8073");
-        for(let x of document.getElementsByClassName("lex-only")) {
-            x.classList.remove("hidden");
-        }
-    } else {
-        setTimeout(() => {
-            d3.selectAll(".vowel-text")
-                .style("fill", d => (d as Vowel).rounded ? "blue" : "black");
-        }, 100);
-        for (let x of document.getElementsByClassName("lex-only")) {
-            x.classList.add("hidden");
-        }
-    }
+    toggleLexsetVisibility(enable, isDiphsChecked());
 }
 
 function toggleLexsetDiphs(enable: boolean) {
@@ -231,7 +191,7 @@ function toggleRP(enable?: boolean) {
         else
             lexset.position = lexset.GA;
     }
-    updateLexsets(lexsetData, false);
+    updateLexsets(lexsetData, isLexsetMode(), isDiphsChecked());
     
     // for (let lexset of lexsetData.values()) {
     //     let pos: AdjustedVowel | Diphthong | undefined;
