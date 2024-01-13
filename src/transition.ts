@@ -42,7 +42,7 @@ export function fadeInOutAttr(enable: boolean, selection: d3.Selection<d3.BaseTy
     if (enable) {
         selection.filter('.' + hidingClass)
             // .attr(opacityAttr, minOpacity)
-            .style(opacityAttr, minOpacity)
+            .attr(opacityAttr, minOpacity)
             .classed(hidingClass, false);
     }
 

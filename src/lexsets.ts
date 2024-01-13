@@ -87,7 +87,7 @@ export function toggleLexsetVisibility(enable: boolean) {
 // let lexsetPositions: Map<string, PositionedVowel> = new Map();
 // normal: 200
 // debug: 1000
-export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true, transition=200) {
+export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = true, transition=200) {
     // showDiphs is only relevant when creating new nodes so we can apply the diph-hidden filter
     // how diphs are toggled: 
     // 1. lex-path stroke opacity
@@ -126,14 +126,15 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         .each(function (lexset) {
             let isdiph = lexset.position instanceof Diphthong;
             let path = d3.select(this);
-            path.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
             if (isdiph) {
                 let diph = lexset.position as Diphthong;
-                path.attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]));
+                path.attr("d", d3.line()([[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]]))
+                    .attr('stroke-opacity', showDiphs ? 0.5 : 0);
                 // if(!showDiphs) path.classed("diph-hidden", true);
             } else if (isAdjustedPosition(lexset.position)) {
                 let pos = lexset.position as AdjustedPosition;
-                path.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]));
+                path.attr("d", d3.line()([[pos.x, pos.y], [pos.x, pos.y]]))
+                    .attr('stroke-opacity', 0.5);
             }
             path.attr('stroke', lexset.rhotic ? 'darkorchid' : '#3b3bb3');
         })
@@ -143,7 +144,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             }
             return null;
         });
-    if(show) {
+    if(showDiphs) {
         newP.transition().duration(transition * 5/2)
             .attr('stroke-opacity', lexset => 
                 lexset.position instanceof Diphthong ? 0.5 : 0); // animated
@@ -158,7 +159,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
         .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
         .attr("r", 0); // animated
-    if(show) {
+    if(showLex) {
         newC.transition().duration(transition)
             .attr("r", 20);
     }
@@ -191,7 +192,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
                 .text(lexset.displayName)
                 .classed("lex-rhotic", lexset.rhotic!);
         });
-    if(show) {
+    if(showLex) {
         newT.transition().duration(transition * 3/2)
             .style("opacity", "1"); // animated
     }
@@ -206,7 +207,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
     update.select("circle.lex-circle")
         .attr("alt", lexset => lexset.displayName)
         .transition().duration(transition)
-        .attr("r", lexset => show && !(lexset.position instanceof Diphthong) ? 20 : 0)
+        .attr("r", lexset => showLex && !(lexset.position instanceof Diphthong) ? 20 : 0)
         // animated, as required when changing from diph to mono
         .filter(lexset => isAdjustedPosition(lexset.position))
         .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
@@ -238,7 +239,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
         let path = d3.select(this);
         let anim = path as 
             d3.Transition<d3.BaseType, unknown, null, undefined> | d3.Selection<d3.BaseType, unknown, null, undefined>;
-        if (show) anim = path.transition().duration(transition * 5/2);
+        if (showLex) anim = path.transition().duration(transition * 5/2);
         anim.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
         if (isdiph) {
             let diph = lexset.position as Diphthong;
@@ -279,7 +280,7 @@ export function updateLexsets(lexsetData: Lexsets, show = true, showDiphs = true
             d3.select(this).classed("diph-hidden", false);
         }
         d3.select(this).transition().duration(transition * 3/2)
-            .style("opacity", show && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
+            .style("opacity", showLex && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
             .attr("x", x)
             .attr("y", y)
             .attr('transform', transform)
