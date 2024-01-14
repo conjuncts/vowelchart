@@ -45,14 +45,14 @@ export class LexicalSet {
 
 export type Lexsets = Map<string, LexicalSet>;
 export let lexsetData: Lexsets = new Map();
+
+export let d3data: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, unknown>;
+
 interface SnapshotHolder {
     RP?: LexSnapshot;
     GA?: LexSnapshot;
 }
 export let snapshots: SnapshotHolder = {};
-
-type d3SorT = d3.Selection<d3.BaseType, LexicalSet, d3.BaseType, unknown> | 
-d3.Transition<d3.BaseType, LexicalSet, d3.BaseType, unknown>;
 
 export function toggleLexsetVisibility(enable: boolean) {
 
@@ -92,10 +92,10 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
     // how diphs are toggled: 
     // 1. lex-path stroke opacity
     // 2. diph-arrowhead toggle
-    
+        
     let update = d3.select("#svg-lex")
-        .selectAll("g")
-        .data([...lexsetData.values()]);
+        .selectAll<SVGGElement, LexicalSet>("g")
+        .data([...lexsetData.values()], (d: LexicalSet) => d.name);
     
     console.log("update lexset");
     update.exit().remove();
@@ -106,6 +106,7 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .classed("lexset", true);
     newNodes.each(function(lexset) {
         this.classList.add(`lex-${lexset.name}`);
+        // only give the right of canonical named classes to the original lexsets
         
         let ele = lexset.GA;
         if (ele instanceof Diphthong) {
@@ -144,7 +145,7 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
             }
             return null;
         });
-    if(showDiphs) {
+    if(showLex && showDiphs) {
         newP.transition().duration(transition * 5/2)
             .attr('stroke-opacity', lexset => 
                 lexset.position instanceof Diphthong ? 0.5 : 0); // animated
@@ -169,6 +170,7 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .classed("lex-text", true)
         .classed("diph-tog", lexset => lexset.position instanceof Diphthong)
         .classed("diph-hidden", lexset => lexset.position instanceof Diphthong && !showDiphs)
+        .text(lexset => lexset.displayName)
         .style("opacity", 0) // animated
         .each(function (lexset) {
             let x;
@@ -301,7 +303,10 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
             return d3.line()([start, end]);
         });
                 
-                
+    
+    let joined = update.merge(newNodes);
+    d3data = joined;
+    return joined;
         
 }
 
@@ -335,7 +340,7 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         
         console.log('lexical sets:', lexsetData);
 
-        updateLexsets(lexsetData, false);
+        updateLexsets(lexsetData, false, true);
         return;
         
         let nodes = svg.select("#svg-lex")

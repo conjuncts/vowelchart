@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
-import { LexicalSet, lexsetData } from "./lexsets";
-import { AdjustedPosition, Diphthong, Vowel, VowelPositionState, isVowel } from "./vowels";
+import { LexicalSet, d3data, lexsetData } from "./lexsets";
+import { AdjustedPosition, Diphthong, Vowel, VowelPositionState } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     let dy = diph.end.y - diph.start.y;
@@ -15,6 +15,51 @@ export function positionDiphText(diph: Diphthong): [number, [number, number]] {
     }
     return [rotation, midpoint];
 
+}
+
+export function positionDiph(node: d3.Selection<d3.BaseType, unknown, any, any>, lex: LexicalSet, diph: Diphthong) {
+    // undefined, mono, or diph to diph
+    // animate the path
+    let start = [diph.start.x, diph.start.y] as [number, number];
+    let end = [diph.end.x, diph.end.y] as [number, number];
+    node.select(".lex-path")
+        .transition()
+        .duration(500)
+        .attr('d', d3.line()([start, end]))
+        .attr('stroke-opacity', 0.5)
+        .attr("marker-end", lex.rhotic ?
+            "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+
+    // animate the bound
+    node.select(".diph-bounds")
+        .transition()
+        .duration(500)
+        .attr('d', d3.line()([start, end]));
+
+
+    // animate the text
+    let [rotation, midpoint] = positionDiphText(diph);
+
+    let txt = node.select(".lex-text")
+        .classed("lex-diph-text", true);
+    // if (lexset.name === "CURE" && isVowel(was)) {
+    //     txt.attr('transform',
+    //         `rotate(${rotation}, ${was.x}, ${was.y})`); // animation is broken
+    // }
+    let trans = txt.transition()
+        .duration(300);
+    trans.attr("x", midpoint[0])
+        .attr("y", midpoint[1])
+        .attr('transform',
+            `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
+        .style("opacity", "1");
+
+    // clean up old
+    node.select(".lex-circle")
+        .transition()
+        .duration(300)
+        .attr("r", 0);
+        
 }
 
 /**
@@ -36,47 +81,8 @@ export function positionLexset(lexset: LexicalSet, pos: AdjustedPosition | Dipht
                 return node;
             }
         }
-        // undefined, mono, or diph to diph
-        // animate the path
-        let start = [pos.start.x, pos.start.y] as [number, number];
-        let end = [pos.end.x, pos.end.y] as [number, number];
-        node.select(".lex-path")
-            .transition()
-            .duration(500)
-            .attr('d', d3.line()([start, end]))
-            .attr('stroke-opacity', 0.5)
-            .attr("marker-end", lexset.rhotic ?
-                "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)");
+        positionDiph(node, lexset, pos);
         
-        // animate the bound
-        node.select(".diph-bounds")
-            .transition()
-            .duration(500)
-            .attr('d', d3.line()([start, end]));
-        
-        
-        // animate the text
-        let [rotation, midpoint] = positionDiphText(pos);
-
-        let txt = node.select(".lex-text")
-            .classed("lex-diph-text", true);
-        if (lexset.name === "CURE" && isVowel(was)) {
-            txt.attr('transform',
-                `rotate(${rotation}, ${was.x}, ${was.y})`); // animation is broken
-        }
-        let trans = txt.transition()
-            .duration(300);
-        trans.attr("x", midpoint[0])
-            .attr("y", midpoint[1])
-            .attr('transform',
-                `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`)
-            .style("opacity", "1");
-        
-        // clean up old
-        node.select(".lex-circle")
-            .transition()
-            .duration(300)
-            .attr("r", 0);
         
     } else {
         // monophthong            
@@ -152,7 +158,14 @@ export function repositionVowels(
         .duration(500)
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
-    
+    d3data.filter(d => d.position instanceof Diphthong)
+        .each(function (d) {
+            // @ts-ignore
+            positionDiph(d3.select(this), d, d.position as Diphthong)
+        });
+    return;
+        
+        
     let diphs = document.getElementById("svg-lex");
     for(let diph of diphs!.getElementsByClassName("lex-diph")) {
         let name = undefined;
@@ -164,8 +177,10 @@ export function repositionVowels(
             }
         }
         let lexset = lexsetData.get(name!)!;
-        let pos = lexset.position;
-        positionLexset(lexset, pos!);
+        let pos = lexset.position as Diphthong; // diph
+        
+
+        positionDiph(d3.select(`.lex-${lexset.name}`), lexset, pos); // okay for now since lexset are 
         console.log("foo");
         
     }

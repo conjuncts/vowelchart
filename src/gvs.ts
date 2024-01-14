@@ -1,8 +1,8 @@
 import * as d3 from "d3";
 import { LexSnapshot, loadSnapshot } from "./snapshot";
 import { vowelData } from "./main";
-import { LexicalSet, lexsetData, updateLexsets, snapshots as oldSnapshots } from "./lexsets";
-import { toggle } from "./tabs";
+import { LexicalSet, lexsetData, updateLexsets} from "./lexsets";
+import { isDiphsChecked, toggle } from "./tabs";
 
 export let remapped = new Map<string, LexicalSet>();
 export let snapshots = new Map<string, LexSnapshot>();
@@ -11,8 +11,8 @@ export let newLexsets = new Map<string, LexicalSet>();
 function loadGVS() {
     return d3.tsv("snapshots/GVS.tsv").then((data) => {
         // remap lexsets
-        let used: string[] = [];
-        data.forEach((row: d3.DSVRowString<string>, idx: number) => {
+        let used: Map<string, number> = new Map();
+        data.forEach((row: d3.DSVRowString<string>) => {
             let orig = row['Name'];
             // some preprocessing of the name
             let name = orig;
@@ -25,14 +25,17 @@ function loadGVS() {
                 console.error("undefined lexical set. (Check the 'Name' column)", name);
                 return;
             }
-            if (used.includes(name)) {
+            if (used.has(name)) {
                 // it has been used before. we need to make a new one
                 lex = lex.fork(); // do not reuse
-                newLexsets.set(name, lex);
+                let goby = name + used.get(name)
+                lex.name = goby; // do not duplicate names
+                newLexsets.set(goby, lex);
+                used.set(name, used.get(name)! + 1);
             } else {
                 // if it hasn't been mapped before
                 // we can reuse the old lexical set
-                used.push(name);
+                used.set(name, 1);
             }
             lex.displayName = orig; // update. be sure to revert later. TODO implement displayName
 
@@ -89,5 +92,5 @@ export function moveTo(date: number) {
     for (let [lex, pos] of snapshot.data) {
         lex.position = pos;
     }
-    updateLexsets(remapped);
+    updateLexsets(remapped, true, isDiphsChecked());
 }

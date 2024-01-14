@@ -1,10 +1,9 @@
 
 import * as d3 from 'd3';
-import { AdjustedVowel, Diphthong, Vowel, VowelPositionState } from './vowels';
+import { VowelPositionState } from './vowels';
 import { lexsetData, toggleLexsetVisibility, updateLexsets } from './lexsets';
-import { positionLexset, repositionVowels } from './positioning';
+import { repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
-import { DiphthongScheduler } from './synthesis';
 import { toggleGVS } from './gvs';
 import { fadeInOut } from './transition';
 
@@ -62,7 +61,7 @@ function toggleReferenceRecordings(enable?: boolean) {
         }
     }
 }
-function isDiphsChecked() {
+export function isDiphsChecked() {
     return (document.getElementById('toggle-diphs') as HTMLInputElement).checked;
 }
 function isLexsetMode(tab?: Tab) {
