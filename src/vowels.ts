@@ -259,3 +259,15 @@ export class PositionOnly implements Vowel{
     }
     
 }
+
+export function toStartEnd(v: AdjustedPosition | Diphthong): [[number, number], [number, number]] {
+    if(v === undefined) {
+        console.log('warning undefined');
+        return [[0,0], [0,0]];
+    }
+    if(isAdjustedPosition(v)) {
+        return [[v.x, v.y], [v.x, v.y]];
+    }
+    let diph = v as Diphthong;
+    return [[diph.start.x, diph.start.y], [diph.end.x, diph.end.y]];
+}

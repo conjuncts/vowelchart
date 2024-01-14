@@ -6,7 +6,6 @@ import { isDiphsChecked, toggle } from "./tabs";
 
 export let remapped = new Map<string, LexicalSet>();
 export let snapshots = new Map<string, LexSnapshot>();
-export let newLexsets = new Map<string, LexicalSet>();
 
 function loadGVS() {
     return d3.tsv("snapshots/GVS.tsv").then((data) => {
@@ -25,30 +24,27 @@ function loadGVS() {
                 console.error("undefined lexical set. (Check the 'Name' column)", name);
                 return;
             }
+            lex = lex.fork(); // always reuse
+            let alias = name;
             if (used.has(name)) {
-                // it has been used before. we need to make a new one
-                lex = lex.fork(); // do not reuse
-                let goby = name + used.get(name)
-                lex.name = goby; // do not duplicate names
-                newLexsets.set(goby, lex);
+                // it has been used before. we need to change up the name
+                alias += used.get(name)
+                lex.name = alias; // do not duplicate names
                 used.set(name, used.get(name)! + 1);
             } else {
                 // if it hasn't been mapped before
                 // we can reuse the old lexical set
                 used.set(name, 1);
             }
-            lex.displayName = orig; // update. be sure to revert later. TODO implement displayName
-
+            lex.displayName = orig;
             remapped.set(orig, lex);
-
-            // position
 
         });
         return data;
     }).then((data) => {
         console.log("remapped lexsets", remapped);
         let ret = loadSnapshot(data, vowelData, remapped);
-        for (let snapshot of ret) {
+        for (let snapshot of ret) { // store snapshots for later use
             snapshots.set(snapshot.name, snapshot);
         }
     });
@@ -91,6 +87,11 @@ export function moveTo(date: number) {
     }
     for (let [lex, pos] of snapshot.data) {
         lex.position = pos;
+        console.log("moving", lex.position, pos);
     }
     updateLexsets(remapped, true, isDiphsChecked());
+    for (let [lex, pos] of snapshot.data) {
+        // lex.position = pos;
+        console.log("confirm", lex.position, pos);
+    }
 }

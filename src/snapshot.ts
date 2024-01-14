@@ -2,6 +2,9 @@ import { DSVRowString } from "d3";
 import { LexicalSet, Lexsets } from "./lexsets";
 import { AdjustedVowel, Diphthong, Vowel, isVowel, Vowels, vowelFromString, AdjustedPosition, isAdjustedPosition, Position, makeVowel } from "./vowels";
 
+export class SnapshotEntry {
+    
+}
 
 export class LexSnapshot {
     name: string;
