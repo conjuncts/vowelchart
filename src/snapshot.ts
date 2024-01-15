@@ -51,13 +51,14 @@ export class LexSnapshot {
     }
 }
 
-function interpolateVowel(a: Vowel, b: Vowel, t: number): Vowel {
+function interpolateVowel(a: Position, b: Position, t: number): Position {
     let x = a.x + (b.x - a.x) * t;
     let y = a.y + (b.y - a.y) * t;
-    let F1 = a.F1 + (b.F1 - a.F1) * t;
-    let F2 = a.F2 + (b.F2 - a.F2) * t;
-    let F3 = a.F3 + (b.F3 - a.F3) * t;
-    return makeVowel("pos only", "pos only", F1, F2, F3, x, y);
+    // let F1 = a.F1 + (b.F1 - a.F1) * t;
+    // let F2 = a.F2 + (b.F2 - a.F2) * t;
+    // let F3 = a.F3 + (b.F3 - a.F3) * t;
+    return {x: x, y: y};
+    // return makeVowel("pos only", "pos only", F1, F2, F3, x, y);
 }
 
 /**
@@ -179,12 +180,17 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
                     throw new Error("intepolation has no end");
                 }
                 // only calculate the mono to mono case for now
-                if(isVowel(prev) && isVowel(end)) {
+                if (isAdjustedPosition(prev) && isAdjustedPosition(end)) {
                     for(let k = i; k < j; ++k) {
-                        let interp = new AdjustedVowel(
-                            interpolateVowel(prev, end, (k - i) / (j - i)),
-                            0, 0
-                        );
+                        let t = (k - i + 1) / (j - i + 1);
+                        let interp = interpolateVowel(prev, end, t) as AdjustedPosition;
+                        interp.dx = interp.dy = 0;
+                        // AdjustedVowel(
+                        //     // interpolateVowel(prev, end, (k - i) / (j - i)),
+                            
+                        //     0, 0
+                        // );
+                        console.log("interp @ " + t, interp);
                         snapshots[k]!.appendVowel(lex, interp);
                     }
                 } else {

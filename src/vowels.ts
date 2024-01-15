@@ -4,6 +4,10 @@ export interface AdjustedPosition {
     dx: number;
     dy: number;
 }
+export interface Adjustment {
+    dx: number;
+    dy: number;
+}
 export interface Vowel {
     filename: string;
     symbol: string;

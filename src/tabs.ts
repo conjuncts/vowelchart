@@ -97,7 +97,7 @@ function toggleDiphthongs(enable?: boolean) {
     // }
 }
 
-function toggleLexsets(enable?: boolean) {
+async function toggleLexsets(enable?: boolean) {
     if (enable === undefined) {
         enable = isLexsetMode();
     }
@@ -141,10 +141,17 @@ function enterTab(tab: Tab, from: Tab) {
             x.classList.add("hidden");
         }
     }
-    if(isLexsetMode(tab) !== isLexsetMode(from)) {
-        console.log("toggling lexsets");
-        toggleLexsets(isLexsetMode(tab));
+    if (tab === Tab.LEXSETS) {
+        for (let x of document.getElementsByClassName("tab2-only")) {
+            x.classList.remove("hidden");
+        }
     }
+    if (from === Tab.LEXSETS) {
+        for (let x of document.getElementsByClassName("tab2-only")) {
+            x.classList.add("hidden");
+        }
+    }
+
     if(tab === Tab.GVS) {
         for (let x of document.getElementsByClassName("gvs-only")) x.classList.remove("hidden");
         toggleGVS(true);
@@ -152,6 +159,10 @@ function enterTab(tab: Tab, from: Tab) {
     if(from === Tab.GVS) {
         for (let x of document.getElementsByClassName("gvs-only")) x.classList.add("hidden");
         toggleGVS(false);
+    }
+    if (isLexsetMode(tab) !== isLexsetMode(from)) {
+        console.log("toggling lexsets");
+        toggleLexsets(isLexsetMode(tab));
     }
     activeTab = tab;
 }

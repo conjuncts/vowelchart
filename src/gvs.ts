@@ -87,13 +87,8 @@ export function moveTo(date: number) {
     }
     for (let [lex, pos] of snapshot.data) {
         lex.position = pos;
-        console.log("moving", lex.position, pos);
     }
     updateLexsets(remapped, true, isDiphsChecked());
-    for (let [lex, pos] of snapshot.data) {
-        // lex.position = pos;
-        console.log("confirm", lex.position, pos);
-    }
 }
 
 document.getElementById('gvs-slider')!.addEventListener('change', (e) => {

@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Diphthong, isRhotic, AdjustedVowel, Vowels, AdjustedPosition, isAdjustedPosition, Vowel, toStartEnd } from './vowels';
+import { Diphthong, isRhotic, AdjustedVowel, Vowels, AdjustedPosition, isAdjustedPosition, Vowel, toStartEnd, Adjustment } from './vowels';
 import { DiphthongScheduler } from './synthesis';
 import { positionDiphText } from './positioning';
 import { LexSnapshot, loadSnapshot } from './snapshot';
@@ -11,6 +11,7 @@ export class LexicalSet {
     RP?: (AdjustedVowel | Diphthong);
     GA?: (AdjustedVowel | Diphthong);
     position: (AdjustedPosition | Diphthong | undefined);
+    adjustment: Adjustment = {dx: 0, dy: 0};
     examples: string[];
     constructor() {
         this.name = this.displayName = "";
@@ -55,14 +56,14 @@ interface SnapshotHolder {
 export let snapshots: SnapshotHolder = {};
 
 export function toggleLexsetVisibility(enable: boolean) {
-
-    fadeInOutAttr(enable, d3.selectAll('.lex-circle'), "lex-hidden", "r", 0, 20, 200);
+    // make async
+    fadeInOutAttr(enable, d3.selectAll('.lex-circle'), "lex-hidden", "r", 0, 20, 200, "lex-toggle");
 
     // toggle lexset text
     // if diphs are enabled, we need to toggle the diphs
     // if not, we must exclude the diphs
     
-    fadeInOut(enable, d3.selectAll('.lex-text'), "lex-hidden", "opacity", 0, 1, 200);
+    fadeInOut(enable, d3.selectAll('.lex-text'), "lex-hidden", "opacity", 0, 1, 200, "lex-toggle");
 
     // toggle vowel text
     if (enable) {
@@ -84,41 +85,26 @@ export function toggleLexsetVisibility(enable: boolean) {
     }
 }
 
-// let lexsetPositions: Map<string, PositionedVowel> = new Map();
-// normal: 200
-// debug: 1000
-export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = true, transition=200) {
-    // showDiphs is only relevant when creating new nodes so we can apply the diph-hidden filter
-    // how diphs are toggled: 
-    // 1. lex-path stroke opacity
-    // 2. diph-arrowhead toggle
-        
-    let update = d3.select("#svg-lex")
-        .selectAll<SVGGElement, LexicalSet>("g")
-        .data([...lexsetData.values()], (d: LexicalSet) => d.name);
-    
-    console.log("update lexset");
-    update.exit().remove();
-        
-    // new node initialization
-    let newNodes = update.enter()
-        .append("g")
-        .classed("lexset", true);
-    newNodes.each(function(lexset) {
+function createNew(newNodes: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, unknown>,
+    showLex = true, showDiphs = true, transition=200) {
+    newNodes.classed("lexset", true);
+    newNodes.each(function (lexset) {
         this.classList.add(`lex-${lexset.name}`);
-        // this is no longer needed, but it can be useful for debugging
-        
+        // the above is no longer needed, but it can be useful for debugging
+
         let pos = lexset.position;
         if (pos instanceof Diphthong) {
             this.classList.add("lex-diph");
         } else if (pos instanceof AdjustedVowel) {
             // pass
+        } else if(pos === undefined){
+            console.error("warning: undefined position", lexset.name, lexset);
         } else {
-            console.log("neither diph nor pos", lexset.name);
+            console.log("neither diph nor pos", lexset.name, lexset);
             return;
         }
     });
-    
+
     // new paths. paths are exception to diph-togglable
     let newP = newNodes.append("path")
         .classed("lex-path", true)
@@ -126,72 +112,45 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .each(function (lexset) {
 
             let path = d3.select(this);
-            if(lexset.position !== undefined) {
+            if (lexset.position !== undefined) {
                 path.attr("d", d3.line()(toStartEnd(lexset.position)))
                     .attr('stroke-opacity', 0); // animated
             }
             path.attr('stroke', lexset.rhotic ? 'darkorchid' : '#3b3bb3');
-        })
-        .attr("marker-end", function (lexset) {
-            if (lexset.position instanceof Diphthong) {
-                return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
-            }
-            return null;
         });
-    if(showDiphs) {
-        newP.transition().duration(transition * 5/2)
-            .attr('stroke-opacity', lexset => 
+    if (showDiphs) {
+        newP.transition().duration(transition * 5 / 2)
+            .attr('stroke-opacity', lexset =>
                 lexset.position instanceof Diphthong ? 0.5 : 0); // animated
     }
-    
+
     // new circles
     let newC = newNodes.append("circle")
         .classed("lex-circle", true)
         .style("fill", "#69b3a222")
-        .classed("lex-unused", lexset => lexset.position instanceof Diphthong)
+        // .classed("lex-unused", lexset => lexset.position instanceof Diphthong)
+        .attr("cx", -9999)
+        .attr("cy", -9999)
         .filter(lexset => isAdjustedPosition(lexset.position))
         .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
         .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
         .attr("r", 0); // animated
-    if(showLex) {
+    if (showLex) {
         newC.transition().duration(transition)
             .attr("r", 20);
     }
-    
+
     // new text
     let newT = newNodes.append("text")
         .classed("lex-text", true)
-        .classed("diph-tog", lexset => lexset.position instanceof Diphthong)
         .classed("diph-hidden", lexset => lexset.position instanceof Diphthong && !showDiphs)
-        .text(lexset => lexset.displayName)
-        .style("opacity", 0) // animated
-        .each(function (lexset) {
-            let x;
-            let y;
-            let transform;
-            if(lexset.position instanceof Diphthong) {
-                let [rotation, midpoint] = positionDiphText(lexset.position);
-                // if(!showDiphs) d3.select(this).classed("diph-hidden", true);
-                x = midpoint[0];
-                y = midpoint[1];
-                transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
-            } else {
-                let pos = lexset.position as AdjustedPosition;
-                x = pos.x;
-                y = pos.y;
-                transform = `translate(${pos.dx + 5}, ${pos.dy + 10})`;
-            }
-            d3.select(this).attr("x", x)
-                .attr("y", y)
-                .attr('transform', transform)
-                .text(lexset.displayName)
-                .classed("lex-rhotic", lexset.rhotic!);
-        });
-    if(showLex) {
-        newT.transition().duration(transition * 3/2)
+        .classed("lex-rhotic", lexset => lexset.rhotic!) // assume that this cannot change
+        .style("opacity", 0); // animated
+    if (showLex) {
+        newT.transition().duration(transition * 3 / 2)
             .style("opacity", "1"); // animated
     }
-    
+
     // new bounds
     newNodes
         .append('path')
@@ -202,26 +161,23 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .attr('stroke-opacity', 0)
         .attr('stroke-width', 10)
         .style("cursor", "pointer")
-        .each(function(lex) {
+        .each(function (lex) {
             let diph = lex.position;
-            if(!(diph instanceof Diphthong)) return;
+            if (!(diph instanceof Diphthong)) return;
             let player = new DiphthongScheduler(diph.start, diph.end);
             // diphGroup
-            d3.select(this)
-                .attr("d", d3.line()(toStartEnd(diph)))
-
-                .on("click", function () {
-                    player.play();
-                });
+            d3.select(this).on("click", player.play);
 
             // bounds
             if (!diph.end) return;
             //     .attr('stroke', '#69b3a222')
             //     .attr('stroke-linecap', 'round')
-            
+
         });
-    
-    
+}
+
+function updateExisting(update: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, unknown>, 
+    showLex = true, showDiphs = true, transition=200) {
     // update circles
     update.select("circle.lex-circle")
         .attr("alt", lexset => lexset.displayName)
@@ -231,92 +187,111 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .filter(lexset => isAdjustedPosition(lexset.position))
         .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
         .attr("cy", lexset => (lexset.position as AdjustedPosition).y);
-    // .on("end", function(lexset) {
-    //     if(lexset.position instanceof Diphthong) {
-    //         d3.select(this).classed("hidden", true);
-    //     }
-    // });
 
-    update.each(function (lexset) {
-        d3.select(this).classed("lex-diph", lexset.position instanceof Diphthong);
-    });
-    
+    update.classed("lex-diph", lexset => lexset.position instanceof Diphthong);
+
     // updating existing paths
     let paths = update.select("path.lex-path");
-        // .attr('stroke', lexset => lexset.rhotic ? 'darkorchid' : '#3b3bb3');
-    paths.attr("marker-end", function (lexset) {
-        if(lexset.position instanceof Diphthong) {
-            return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
-        }
-        return null;
-    });
-    
-    // update paths
-    paths.each(function(lexset) { // path is exception to diphTogglable
-            
+    // .attr('stroke', lexset => lexset.rhotic ? 'darkorchid' : '#3b3bb3');
+
+    paths.each(function (lexset) { // path is exception to diphTogglable
+
         let isdiph = lexset.position instanceof Diphthong;
         let path = d3.select(this);
-        let anim = path as 
+        let anim = path as
             d3.Transition<d3.BaseType, unknown, null, undefined> | d3.Selection<d3.BaseType, unknown, null, undefined>;
-        if (showLex) anim = path.transition().duration(transition * 5/2);
+        if (showLex) anim = path.transition().duration(transition * 5 / 2);
         anim.attr('stroke-opacity', isdiph ? 0.5 : 0); // animated
         if (lexset.position === undefined) return;
 
         anim.attr("d", d3.line()(toStartEnd(lexset.position)));
-            
-        
-    });
-    
 
+    });
+}
+// let lexsetPositions: Map<string, PositionedVowel> = new Map();
+// normal: 200
+// debug: 1000
+export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = true, transition=200) {
+    // showDiphs is only relevant when creating new nodes so we can apply the diph-hidden filter
+    // how diphs are toggled: 
+    // 1. lex-path stroke opacity
+    // 2. diph-arrowhead toggle
+        
+    // let update = 
+    let joined = d3.select("#svg-lex")
+        .selectAll<SVGGElement, LexicalSet>("g")
+        .data([...lexsetData.values()], (d: LexicalSet) => d.name)
+        .join(
+            enter => {
+                // new node initialization
+                let newNodes = enter.append("g");
+                createNew(newNodes, showLex, showDiphs, transition);
+                return newNodes;
+            },
+            update => {
+                updateExisting(update, showLex, showDiphs, transition);
+                return update;
+            },
+            exit => {
+                exit.remove();
+            }
+        )
+    
+    console.log("update lexset");
+    
+    joined.select("path.lex-path")
+        .attr("marker-end", function (lexset) {
+            if (lexset.position instanceof Diphthong) {
+                return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
+            }
+            return null;
+        });
     
     // update text
-    let text = update.select("text.lex-text")
-        // .classed("hidden", !show)
+    joined.select("text.lex-text")
         .text(lexset => lexset.displayName)
-        .classed("diph-tog", lexset => lexset.position instanceof Diphthong);
-    
-    text.each(function (lexset) {
-        let x;
-        let y;
-        let transform;
-        if (lexset.position instanceof Diphthong) {
-            let [rotation, midpoint] = positionDiphText(lexset.position);
-            // if (!showDiphs) d3.select(this).classed("diph-hidden", true);
-            x = midpoint[0];
-            y = midpoint[1];
-            transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
-        } else {
-            if(lexset.name === 'NEAR') {
-                console.log('readjusting');
+        .classed("diph-tog", lexset => lexset.position instanceof Diphthong)
+        .each(function (lexset) {
+            let x;
+            let y;
+            let transform;
+            let pos = lexset.position;
+            if (pos instanceof Diphthong) {
+                let [rotation, midpoint] = positionDiphText(pos);
+                // if (!showDiphs) d3.select(this).classed("diph-hidden", true);
+                x = midpoint[0];
+                y = midpoint[1];
+                transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
+            } else if (isAdjustedPosition(pos)) {
+                if (lexset.name === 'NEAR') {
+                    // console.log('readjusting');
+                }
+                x = pos.x;
+                y = pos.y;
+                transform = `translate(${pos.dx + 5}, ${pos.dy + 10})`;
+                d3.select(this).classed("diph-hidden", false);
+            } else {
+                console.log("neither diph nor pos here", lexset.name, lexset);
+                return;
             }
-            let pos = lexset.position as AdjustedPosition;
-            x = pos.x;
-            y = pos.y;
-            transform = `translate(${pos.dx + 5}, ${pos.dy + 10})`;
-            d3.select(this).classed("diph-hidden", false);
-        }
-        d3.select(this).transition().duration(transition * 3/2)
-            .style("opacity", showLex && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
-            .attr("x", x)
-            .attr("y", y)
-            .attr('transform', transform)
-            .text(lexset.displayName)
-            .on('end', function() {
-                d3.select(this).classed("diph-hidden", lexset.position instanceof Diphthong && !showDiphs);
-            });
-    });
-    
+            d3.select(this).transition().duration(transition * 3 / 2)
+                .style("opacity", showLex && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
+                .attr("x", x)
+                .attr("y", y)
+                .attr('transform', transform)
+                .text(lexset.displayName)
+                .on('end', function () {
+                    d3.select(this).classed("diph-hidden", lexset.position instanceof Diphthong && !showDiphs);
+                });
+        });
+        
     // update the bound instantaneously
-    update.select(".diph-bounds")
-        .attr('d', function(lexset){
+    joined.select(".diph-bounds")
+        .attr('d', function (lexset) {
             let [start, end] = toStartEnd(lexset.position!);
             return d3.line()([start, end]);
-        })
-        .filter(lexset => lexset.position instanceof Diphthong);
-        // .classed("lex-unused", false);
-                
+        });
     
-    let joined = update.merge(newNodes);
     d3data = joined;
     return joined;
         
@@ -356,140 +331,5 @@ export function loadLexicalSets(svg: d3.Selection<SVGGElement, unknown, HTMLElem
         updateLexsets(lexsetData, false, true);
         return;
         
-        let nodes = svg.select("#svg-lex")
-            .selectAll("foo")
-            .data([...lexsetData.values()])
-            .enter()
-            .append("g");
-
-        const curve = d3.line();
-        
-        // for(let lexset of lexsetData.values()) {
-            // let node = gs.append("g")
-            //     .classed(`lex-${lexset.name}`, true);
-        nodes.each(function(lexset) {
-            this.classList.add(`lex-${lexset.name}`);
-            
-            let ele = lexset.GA;
-            if (ele instanceof Diphthong) {
-                this.classList.add("lex-diph");
-            } else if (ele instanceof AdjustedVowel) {
-                // pass
-            } else {
-                console.log("neither diph nor pos", lexset.name);
-                return;
-            }
-            lexset.position = ele;
-        });
-            
-        // path, which for monophthongs is just a dot
-        let paths = nodes.append("path")
-            .classed("lex-path", true)
-            .attr('stroke', lexset => lexset.rhotic ? 'darkorchid' : '#3b3bb3')
-            .attr('stroke-dasharray', '10,10');
-        
-        // let diphs = nodes.filter(lexset => lexset.GA instanceof Diphthong);
-        // let monos = nodes.filter(lexset => lexset.GA instanceof AdjustedVowel);
-        // diphs.classed("lex-diph", true);
-        // monos.classed("lex-monophthong", true);
-        paths.attr("marker-end", function (lexset) {
-            if(lexset.position instanceof Diphthong) {
-                return lexset.rhotic ? "url(#diph-rho-arrowhead)" : "url(#diph-arrowhead)"
-            }
-            return null;
-        });
-        
-        nodes.append("circle")
-            .classed("lex-circle", true)
-            .style("fill", "#69b3a222")
-            .classed("hidden", lexset => lexset.position instanceof Diphthong)
-            .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
-            .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
-            .attr("r", 0) // animated
-            .attr("alt", lexset => lexset.displayName);
-        
-        paths.attr('stroke-opacity', lexset => 
-            lexset.position instanceof Diphthong ? 0.5 : 0) // animated
-        
-        nodes.append("text")
-            .classed("lex-text", true)
-            .classed("hidden", true)
-            .style("opacity", "0") // animated
-            .text(lexset => lexset.displayName)
-            .classed("lex-rhotic", lexset => lexset.rhotic!);
-        
-        // text
-        let positionLexset = function(lexset: LexicalSet) {
-            let node = d3.select(this);
-            // console.log('processing ', lexset.name);
-            let path = node.select("path");
-            
-            let ele = lexset.position;
-            let diph = ele instanceof Diphthong ? ele : undefined;
-            let pos = diph ? undefined : ele as AdjustedVowel;
-
-            if (!(diph || pos)) {
-                console.log("neither diph nor pos", lexset.name);
-                return;
-            }
-
-            // visible
-            let start;
-            let end;
-            if (diph) {
-                start = [diph.start.x, diph.start.y] as [number, number];
-                end = [diph.end.x, diph.end.y] as [number, number];
-            } else if (pos) {
-                start = end = [pos.x, pos.y] as [number, number];
-            } else {
-                return;
-            }
-            path.attr('stroke-opacity', diph ? 0.5 : 0) // animated
-                .attr("d", curve([start, end]));
-
-            // text
-            let text = node.select("text.lex-text");
-            if (diph) {
-                let [rotation, midpoint] = positionDiphText(diph);
-                text.classed("lex-diph-text", true)
-                    .attr("x", midpoint[0])
-                    .attr("y", midpoint[1])
-                    .attr("transform",
-                        `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`);
-            } else if (pos) {
-                text.attr("x", pos.x)
-                    .attr("y", pos.y)
-                    .attr('transform',
-                        `translate(${pos.dx + 5}, ${pos.dy + 10})`);
-            }
-            // the circle and text have the same x/y, but the text just has an offset
-
-            // clickable diphthongs
-            if (diph) {
-                let player = new DiphthongScheduler(diph.start, diph.end);
-                // diphGroup
-                node.append("path")
-                    .attr("d", curve([start, end]))
-                    .classed("diph-bounds", true)
-                    // hidden - animated
-                    .attr('stroke', 'white') // this just needs to be here
-                    .attr('stroke-opacity', 0)
-                    .attr('stroke-width', 10)
-                    .style("cursor", "pointer")
-                    .on("click", function () {
-                        player.play();
-                    });
-
-                // bounds
-                if (!diph.end) return;
-                //     .attr('stroke', '#69b3a222')
-                //     .attr('stroke-linecap', 'round')
-            }
-        } as d3.ValueFn<SVGGElement, LexicalSet, void>;
-        // the circle and text have the same x/y, but the text just has an offset
-        
-        nodes.each(positionLexset);
-        
-        // diphthongs
     });
 }
