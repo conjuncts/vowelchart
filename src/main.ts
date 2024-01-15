@@ -1,10 +1,10 @@
 
 
 import * as d3 from 'd3';
-import { DiphthongScheduler, changeVowel, startVowel, stopVowel } from './synthesis';
+import { changeVowel, startVowel, stopVowel } from './synthesis';
 import { toggle, hydrateTabs } from './tabs';
 import { loadLexicalSets } from './lexsets';
-import { diphs, Vowels, Vowel, makeVowel } from './vowels';
+import { Vowels, Vowel, makeVowel } from './vowels';
 (window as any).toggle = toggle;
 
 hydrateTabs();
@@ -147,7 +147,7 @@ d3.tsv("formants.tsv").then(function (data) {
         });
 
 }).then(() => {
-    loadLexicalSets(svg, vowelData);
+    loadLexicalSets(vowelData);
     
 });
 

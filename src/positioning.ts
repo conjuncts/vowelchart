@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
-import { LexicalSet, d3data, lexsetData } from "./lexsets";
+import { LexicalSet } from "./lexsets";
+import { d3data } from "./transition";
 import { AdjustedPosition, Diphthong, Vowel, VowelPositionState } from "./vowels";
 
 export function positionDiphText(diph: Diphthong): [number, [number, number]] {
@@ -164,26 +165,6 @@ export function repositionVowels(
             positionDiph(d3.select(this), d, d.position as Diphthong)
         });
     return;
-        
-        
-    let diphs = document.getElementById("svg-lex");
-    for(let diph of diphs!.getElementsByClassName("lex-diph")) {
-        let name = undefined;
-        for(let cls of diph.classList) {
-            if(cls === 'lex-diph') continue;
-            if(cls.startsWith("lex-")) {
-                name = cls.substring(4);
-                break;
-            }
-        }
-        let lexset = lexsetData.get(name!)!;
-        let pos = lexset.position as Diphthong; // diph
-        
-
-        positionDiph(d3.select(`.lex-${lexset.name}`), lexset, pos); // okay for now since lexset are 
-        console.log("foo");
-        
-    }
     
 }
 

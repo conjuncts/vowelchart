@@ -1,11 +1,11 @@
 
 import * as d3 from 'd3';
 import { VowelPositionState } from './vowels';
-import { lexsetData, toggleLexsetVisibility, updateLexsets } from './lexsets';
+import { lexsetData, toggleLexsetVisibility } from './lexsets';
 import { repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { toggleGVS } from './gvs';
-import { fadeInOut } from './transition';
+import { fadeInOut, updateLexsets } from './transition';
 
 export enum Tab {
     HOME = 1,
@@ -127,7 +127,7 @@ export function hydrateTabs() {
     
 }
 function enterTab(tab: Tab, from: Tab) {
-    console.log("entering", tab, "from", from);
+    // console.log("entering", tab, "from", from);
     if(tab === from) {
         return;
     }
@@ -161,7 +161,7 @@ function enterTab(tab: Tab, from: Tab) {
         toggleGVS(false);
     }
     if (isLexsetMode(tab) !== isLexsetMode(from)) {
-        console.log("toggling lexsets");
+        // console.log("toggling lexsets");
         toggleLexsets(isLexsetMode(tab));
     }
     activeTab = tab;
@@ -178,8 +178,6 @@ export function recalculateActiveTab() {
     return tab;
 }
 
-// let RP_diphs = false;
-
 function toggleRP(enable?: boolean) {
     if (enable === undefined) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
@@ -192,43 +190,6 @@ function toggleRP(enable?: boolean) {
             lexset.position = lexset.GA;
     }
     updateLexsets(lexsetData, isLexsetMode(), isDiphsChecked());
-    
-    // for (let lexset of lexsetData.values()) {
-    //     let pos: AdjustedVowel | Diphthong | undefined;
-    //     let was: AdjustedVowel | Diphthong | undefined;
-    //     if (enable) {
-    //         pos = lexset.RP;
-    //         was = lexset.GA;
-    //     } else {
-    //         pos = lexset.GA;
-    //         was = lexset.RP;
-    //     }
-    //     if(pos === undefined) continue;
-        
-    //     let node = positionLexset(lexset, pos, was);
-    //     if(!RP_diphs && pos instanceof Diphthong && !(was instanceof Diphthong)) {
-    //         let player = new DiphthongScheduler(pos.start, pos.end);
-    //         node.append("path")
-    //             .attr("d", d3.line()([[pos.start.x, pos.start.y], [pos.end.x, pos.end.y]]))
-    //             .classed("diph-bounds", true)
-    //             // hidden - animated
-    //             .attr('stroke', 'white') // this just needs to be here
-    //             .attr('stroke-opacity', 0)
-    //             .attr('stroke-width', 10)
-    //             .style("cursor", "pointer")
-    //             .on("click", function () {
-    //                 player.play();
-    //             })
-    //             .classed("RP-diph-bounds", true);
-    //         node.classed("lex-diph", true);
-    //     }
-            
-        
-    // }
-    // RP_diphs = true;
-    // d3.selectAll(".RP-diph-bounds")
-    //     .classed("hidden", !enable);
-
 }
 function toggleTrapezoid(enable?: boolean) {
     if(!enable) enable = (document.getElementById('toggle-trapezoid') as HTMLInputElement).checked;

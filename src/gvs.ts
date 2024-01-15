@@ -1,8 +1,9 @@
 import * as d3 from "d3";
-import { LexSnapshot, loadSnapshot } from "./snapshot";
+import { LexSnapshot, applySnapshot, loadSnapshot } from "./snapshot";
 import { vowelData } from "./main";
-import { LexicalSet, lexsetData, updateLexsets} from "./lexsets";
+import { LexicalSet, lexsetData} from "./lexsets";
 import { isDiphsChecked, toggle } from "./tabs";
+import { updateLexsets } from "./transition";
 
 export let remapped = new Map<string, LexicalSet>();
 export let snapshots = new Map<string, LexSnapshot>();
@@ -58,7 +59,7 @@ export function toggleGVS(enable?: boolean) {
         // let remapped = new Map<string, LexicalSet>();
         // let newLexsets = new Map<string, LexicalSet>();
         let actions = function() {
-            moveTo(2000);
+            moveTo((document.getElementById('gvs-slider') as HTMLInputElement).valueAsNumber);
         }
         if(remapped.size === 0) {
             loadGVS().then(actions);
@@ -67,7 +68,7 @@ export function toggleGVS(enable?: boolean) {
         }
     } else {
         // reverting
-        console.log('revert');
+        // console.log('revert');
         for(let [name, lexset] of lexsetData) {
             lexset.displayName = name;
         }
@@ -85,9 +86,7 @@ export function moveTo(date: number) {
         console.error("undefined snapshot", date);
         return;
     }
-    for (let [lex, pos] of snapshot.data) {
-        lex.position = pos;
-    }
+    applySnapshot(snapshot);
     updateLexsets(remapped, true, isDiphsChecked());
 }
 

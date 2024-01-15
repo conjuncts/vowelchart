@@ -1,16 +1,24 @@
 import { DSVRowString } from "d3";
 import { LexicalSet, Lexsets } from "./lexsets";
-import { AdjustedVowel, Diphthong, Vowel, isVowel, Vowels, vowelFromString, AdjustedPosition, isAdjustedPosition, Position, makeVowel } from "./vowels";
+import { AdjustedVowel, Diphthong, Vowel, isVowel, Vowels, vowelFromString, AdjustedPosition, isAdjustedPosition, Position, makeVowel, isPosition, Adjustment } from "./vowels";
 
 export class SnapshotEntry {
     
 }
 
+export function applySnapshot(snapshot: LexSnapshot) {
+    for (let [lex, pos] of snapshot.data) {
+        lex.position = pos;
+    }
+}
+
 export class LexSnapshot {
     name: string;
     data: Map<LexicalSet, AdjustedPosition | Diphthong>;
+    adjustments: Map<LexicalSet, Adjustment>;
     constructor(data: Map<LexicalSet, AdjustedPosition | Diphthong>, name: string) {
         this.data = data;
+        this.adjustments = new Map();
         this.name = name;
     }
     computeCollisions(v: Position, checkCollisionsWith?: Iterable<AdjustedPosition>) {
@@ -37,13 +45,17 @@ export class LexSnapshot {
         return [textx - atx, texty - aty];
     }
 
-    appendVowel(lex: LexicalSet, pos: AdjustedPosition | Vowel | Diphthong) {
+    appendVowel(lex: LexicalSet, pos: AdjustedPosition | Vowel | Position | Diphthong) {
         
         if(isAdjustedPosition(pos)) {
             this.data.set(lex, pos);
         } else if(isVowel(pos)) {
             let [dx, dy] = this.computeCollisions(pos);
             this.data.set(lex, new AdjustedVowel(pos, dx, dy));
+        } else if(isPosition(pos)) {
+            let [dx, dy] = this.computeCollisions(pos);
+            let adj = {x: pos.x, y: pos.y, dx: dx, dy: dy};
+            this.data.set(lex, adj);
         } else if(pos instanceof Diphthong) {
             // diphthong
             this.data.set(lex, pos);
@@ -183,14 +195,14 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
                 if (isAdjustedPosition(prev) && isAdjustedPosition(end)) {
                     for(let k = i; k < j; ++k) {
                         let t = (k - i + 1) / (j - i + 1);
-                        let interp = interpolateVowel(prev, end, t) as AdjustedPosition;
-                        interp.dx = interp.dy = 0;
+                        let interp = interpolateVowel(prev, end, t); // Position
+                        // interp.dx = interp.dy = 0;
                         // AdjustedVowel(
                         //     // interpolateVowel(prev, end, (k - i) / (j - i)),
                             
                         //     0, 0
                         // );
-                        console.log("interp @ " + t, interp);
+                        // console.log("interp @ " + t, interp);
                         snapshots[k]!.appendVowel(lex, interp);
                     }
                 } else {
