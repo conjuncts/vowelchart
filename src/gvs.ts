@@ -58,7 +58,7 @@ export function toggleGVS(enable?: boolean) {
         // let remapped = new Map<string, LexicalSet>();
         // let newLexsets = new Map<string, LexicalSet>();
         let actions = function() {
-            moveTo(1600);
+            moveTo(2000);
         }
         if(remapped.size === 0) {
             loadGVS().then(actions);
@@ -95,3 +95,9 @@ export function moveTo(date: number) {
         console.log("confirm", lex.position, pos);
     }
 }
+
+document.getElementById('gvs-slider')!.addEventListener('change', (e) => {
+    let date = (document.getElementById('gvs-slider') as HTMLInputElement).valueAsNumber;
+    if(!(date % 50 === 0)) return;
+    moveTo(date);
+});
