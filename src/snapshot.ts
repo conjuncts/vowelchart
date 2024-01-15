@@ -1,6 +1,6 @@
 import { DSVRowString } from "d3";
 import { LexicalSet, Lexsets } from "./lexsets";
-import { AdjustedVowel, Diphthong, Vowel, isVowel, Vowels, vowelFromString, AdjustedPosition, isAdjustedPosition, Position, makeVowel, isPosition, Adjustment } from "./vowels";
+import { Diphthong, Vowel, isVowel, Vowels, vowelFromString, Position, Adjustment, makeVowel } from "./vowels";
 
 export class SnapshotEntry {
     
@@ -9,27 +9,32 @@ export class SnapshotEntry {
 export function applySnapshot(snapshot: LexSnapshot) {
     for (let [lex, pos] of snapshot.data) {
         lex.position = pos;
+        lex.adjustment = snapshot.adjustments.get(lex)!;
     }
 }
 
 export class LexSnapshot {
     name: string;
-    data: Map<LexicalSet, AdjustedPosition | Diphthong>;
+    data: Map<LexicalSet, Vowel | Diphthong>;
     adjustments: Map<LexicalSet, Adjustment>;
-    constructor(data: Map<LexicalSet, AdjustedPosition | Diphthong>, name: string) {
+    constructor(data: Map<LexicalSet, Vowel | Diphthong>, name: string) {
         this.data = data;
         this.adjustments = new Map();
         this.name = name;
     }
-    computeCollisions(v: Position, checkCollisionsWith?: Iterable<AdjustedPosition>) {
+    computeCollisions(v: Position, checkCollisionsWith?: Iterable<[Position, Adjustment]>) {
         if (checkCollisionsWith === undefined) {
-            checkCollisionsWith = [];
+            let builder = [] as [Position, Adjustment][];
             for (let pos of this.data.values()) {
                 if (pos === undefined) continue;
-                if (isAdjustedPosition(pos)) {
-                    (checkCollisionsWith as AdjustedPosition[]).push(pos);
+                if (isVowel(pos)) {
+                    builder.push([pos, {dx: 0, dy: 0}]);
+                } else if(pos instanceof Diphthong) {
+                    let [_, midpoint] = pos.positionDiphText();
+                    builder.push([{x: midpoint[0], y: midpoint[1]}, {dx: 0, dy: 0}]);
                 }
             }
+            checkCollisionsWith = builder;
         }
 
         let atx = v.x;
@@ -37,40 +42,40 @@ export class LexSnapshot {
         let textx = atx;
         let texty = aty;
         // prevent at same position
-        for (let pos of checkCollisionsWith) {
-            if (Math.abs(pos.x + pos.dx - textx) < 10 && Math.abs(pos.y + pos.dy - texty) < 10) {
+        for (let [pos, adj] of checkCollisionsWith) {
+            if (Math.abs(pos.x + adj.dx - textx) < 10 && Math.abs(pos.y + adj.dy - texty) < 10) {
                 texty += 10; // works since duplicates are handled ascending
             }
         }
         return [textx - atx, texty - aty];
     }
 
-    appendVowel(lex: LexicalSet, pos: AdjustedPosition | Vowel | Position | Diphthong) {
+    appendVowel(lex: LexicalSet, pos: Vowel | Diphthong) {
         
-        if(isAdjustedPosition(pos)) {
+        if(isVowel(pos)) {
+            let [dx, dy] = this.computeCollisions(pos);
             this.data.set(lex, pos);
-        } else if(isVowel(pos)) {
-            let [dx, dy] = this.computeCollisions(pos);
-            this.data.set(lex, new AdjustedVowel(pos, dx, dy));
-        } else if(isPosition(pos)) {
-            let [dx, dy] = this.computeCollisions(pos);
-            let adj = {x: pos.x, y: pos.y, dx: dx, dy: dy};
-            this.data.set(lex, adj);
+            this.adjustments.set(lex, {dx: dx, dy: dy});
         } else if(pos instanceof Diphthong) {
             // diphthong
+            let [_, midpoint] = pos.positionDiphText();
+            let pt = {x: midpoint[0], y: midpoint[1]};
+            let [dx, dy] = this.computeCollisions(pt);
             this.data.set(lex, pos);
+            this.adjustments.set(lex, {dx: dx, dy: dy});
+            
         }
     }
 }
 
-function interpolateVowel(a: Position, b: Position, t: number): Position {
+function interpolateVowel(a: Vowel, b: Vowel, t: number): Vowel {
     let x = a.x + (b.x - a.x) * t;
     let y = a.y + (b.y - a.y) * t;
-    // let F1 = a.F1 + (b.F1 - a.F1) * t;
-    // let F2 = a.F2 + (b.F2 - a.F2) * t;
-    // let F3 = a.F3 + (b.F3 - a.F3) * t;
-    return {x: x, y: y};
-    // return makeVowel("pos only", "pos only", F1, F2, F3, x, y);
+    let F1 = a.F1 + (b.F1 - a.F1) * t;
+    let F2 = a.F2 + (b.F2 - a.F2) * t;
+    let F3 = a.F3 + (b.F3 - a.F3) * t;
+    // return {x: x, y: y};
+    return makeVowel("pos only", "pos only", F1, F2, F3, x, y);
 }
 
 /**
@@ -149,7 +154,6 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
                     return;
                 }
                 vowel = snapshots[i]!.data.get(previousLex!);
-                if(vowel instanceof AdjustedVowel) vowel = vowel.vowel;
             } else {
                 vowel = vowelFromString(val, vowelData);
             }
@@ -192,7 +196,7 @@ export function loadSnapshot(data: d3.DSVRowArray<string>, vowelData: Vowels, le
                     throw new Error("intepolation has no end");
                 }
                 // only calculate the mono to mono case for now
-                if (isAdjustedPosition(prev) && isAdjustedPosition(end)) {
+                if (isVowel(prev) && isVowel(end)) {
                     for(let k = i; k < j; ++k) {
                         let t = (k - i + 1) / (j - i + 1);
                         let interp = interpolateVowel(prev, end, t); // Position

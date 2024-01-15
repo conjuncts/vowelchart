@@ -1,9 +1,9 @@
-export interface AdjustedPosition {
-    x: number;
-    y: number;
-    dx: number;
-    dy: number;
-}
+// export interface AdjustedPosition {
+//     x: number;
+//     y: number;
+//     dx: number;
+//     dy: number;
+// }
 export interface Adjustment {
     dx: number;
     dy: number;
@@ -64,28 +64,28 @@ export function makeVowel(filename: string, symbol: string, F1: number, F2: numb
     return v;
     
 }
-export class AdjustedVowel<T extends Vowel = Vowel> implements AdjustedPosition {
-    vowel: T;
-    dx: number;
-    dy: number;
-    constructor(v: T, dx: number, dy: number) {
-        this.vowel = v;
-        this.dx = dx;
-        this.dy = dy;
-    }
-    get x() {
-        return this.vowel.x;
-    }
-    set x(x) {
-        this.vowel.x = x;
-    }
-    get y() {
-        return this.vowel.y;
-    }
-    set y(y) {
-        this.vowel.y = y;
-    }
-}
+// export class AdjustedVowel<T extends Vowel = Vowel> implements AdjustedPosition {
+//     vowel: T;
+//     dx: number;
+//     dy: number;
+//     constructor(v: T, dx: number, dy: number) {
+//         this.vowel = v;
+//         this.dx = dx;
+//         this.dy = dy;
+//     }
+//     get x() {
+//         return this.vowel.x;
+//     }
+//     set x(x) {
+//         this.vowel.x = x;
+//     }
+//     get y() {
+//         return this.vowel.y;
+//     }
+//     set y(y) {
+//         this.vowel.y = y;
+//     }
+// }
 
 
 export class Diphthong {
@@ -97,8 +97,18 @@ export class Diphthong {
         this.start = start;
         this.end = end;
     }
-    endpoints() {
-        
+    positionDiphText(): [number, [number, number]] {
+        let dy = this.end.y - this.start.y;
+        let dx = this.end.x - this.start.x;
+        let midpoint = [this.start.x + dx / 3, this.start.y + dy / 3] as [number, number];
+        // 1/3 point has fewer collision
+        let rotation = Math.atan2(dy,
+            dx) * 180 / Math.PI;
+
+        if (-270 <= rotation && rotation <= -90) {
+            rotation += 180;
+        }
+        return [rotation, midpoint];
     }
 }
 
@@ -199,36 +209,16 @@ o ʊ̝`.split("\n").map((x) => x.split(' '));
 // ʊ
 
 
-export function adjustVowel<T extends Vowel>(vowel: T, // F1: number, F2: number, 
-    checkCollisionsWith: Iterable<AdjustedPosition>): AdjustedVowel<Vowel & T>{
-
-    let out = vowel;
-    let textx = out.x;
-    let texty = out.y;
-    // prevent at same position
-    for (let pos of checkCollisionsWith) {
-        if (Math.abs(pos.x + pos.dx - textx) < 10 && Math.abs(pos.y + pos.dy - texty) < 10) {
-            texty += 10; // works since duplicates are handled ascending
-        }
-    }
-
-    // let position = new AdjustedPosition(atx, aty);
-    // position.dx = (textx - atx);
-    // position.dy = (texty - aty);
-    
-    return new AdjustedVowel(out, textx - out.x, texty - out.y);
-}
-
 export type Position = { x: number, y: number };
 export function isPosition(x: any): x is Position {
     return x !== undefined && 
         x.x !== undefined && x.y !== undefined;
 }
 
-export function isAdjustedPosition(x: any): x is AdjustedPosition {
-    return x !== undefined && 
-        x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
-}
+// export function isAdjustedPosition(x: any): x is AdjustedPosition {
+//     return x !== undefined && 
+//         x.x !== undefined && x.y !== undefined && x.dx !== undefined && x.dy !== undefined;
+// }
 
 export function isVowel(x: any): x is Vowel {
     return x !== undefined && x.filename !== undefined && x.symbol !== undefined
@@ -264,12 +254,12 @@ export class PositionOnly implements Vowel{
     
 }
 
-export function toStartEnd(v: AdjustedPosition | Diphthong): [[number, number], [number, number]] {
+export function toStartEnd(v: Vowel | Diphthong): [[number, number], [number, number]] {
     if(v === undefined) {
         console.log('warning undefined');
         return [[0,0], [0,0]];
     }
-    if(isAdjustedPosition(v)) {
+    if(isVowel(v)) {
         return [[v.x, v.y], [v.x, v.y]];
     }
     let diph = v as Diphthong;

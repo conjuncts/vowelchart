@@ -1,11 +1,12 @@
 
 import * as d3 from 'd3';
 import { VowelPositionState } from './vowels';
-import { lexsetData, toggleLexsetVisibility } from './lexsets';
+import { lexsetData, toggleLexsetVisibility, snapshots as oldSnapshots } from './lexsets';
 import { repositionVowels } from './positioning';
 import { vowelData, x as xAxis, y as yAxis, d3gs } from './main';
 import { toggleGVS } from './gvs';
 import { fadeInOut, updateLexsets } from './transition';
+import { applySnapshot } from './snapshot';
 
 export enum Tab {
     HOME = 1,
@@ -183,12 +184,13 @@ function toggleRP(enable?: boolean) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
     
-    for(let lexset of lexsetData.values()) {
-        if (enable) 
-            lexset.position = lexset.RP;
-        else
-            lexset.position = lexset.GA;
-    }
+    // for(let lexset of lexsetData.values()) {
+    //     if (enable) 
+    //         lexset.position = lexset.RP;
+    //     else
+    //         lexset.position = lexset.GA;
+    // }
+    applySnapshot(enable ? oldSnapshots.RP! : oldSnapshots.GA!);
     updateLexsets(lexsetData, isLexsetMode(), isDiphsChecked());
 }
 function toggleTrapezoid(enable?: boolean) {

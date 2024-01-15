@@ -1,6 +1,5 @@
 import * as d3 from "d3";
-import { AdjustedPosition, AdjustedVowel, Diphthong, isAdjustedPosition, toStartEnd } from "./vowels";
-import { positionDiphText } from "./positioning";
+import { Diphthong, Vowel, isVowel, toStartEnd } from "./vowels";
 import { LexicalSet, Lexsets } from "./lexsets";
 import { DiphthongScheduler } from "./synthesis";
 
@@ -72,7 +71,7 @@ function createNew(newNodes: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, 
         let pos = lexset.position;
         if (pos instanceof Diphthong) {
             this.classList.add("lex-diph");
-        } else if (pos instanceof AdjustedVowel) {
+        } else if (isVowel(pos)) {
             // pass
         } else if (pos === undefined) {
             console.error("warning: undefined position", lexset.name, lexset);
@@ -108,9 +107,9 @@ function createNew(newNodes: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, 
         // .classed("lex-unused", lexset => lexset.position instanceof Diphthong)
         .attr("cx", -9999)
         .attr("cy", -9999)
-        .filter(lexset => isAdjustedPosition(lexset.position))
-        .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
-        .attr("cy", lexset => (lexset.position as AdjustedPosition).y)
+        .filter(lexset => isVowel(lexset.position))
+        .attr("cx", lexset => (lexset.position as Vowel).x)
+        .attr("cy", lexset => (lexset.position as Vowel).y)
         .attr("r", 0); // animated
     if (showLex) {
         newC.transition().duration(transition)
@@ -161,9 +160,9 @@ function updateExisting(update: d3.Selection<SVGGElement, LexicalSet, d3.BaseTyp
         .transition().duration(transition)
         .attr("r", lexset => showLex && !(lexset.position instanceof Diphthong) ? 20 : 0)
         // animated, as required when changing from diph to mono
-        .filter(lexset => isAdjustedPosition(lexset.position))
-        .attr("cx", lexset => (lexset.position as AdjustedPosition).x)
-        .attr("cy", lexset => (lexset.position as AdjustedPosition).y);
+        .filter(lexset => isVowel(lexset.position))
+        .attr("cx", lexset => (lexset.position as Vowel).x)
+        .attr("cy", lexset => (lexset.position as Vowel).y);
 
     update.classed("lex-diph", lexset => lexset.position instanceof Diphthong);
 
@@ -231,28 +230,28 @@ export function updateLexsets(lexsetData: Lexsets, showLex = true, showDiphs = t
         .each(function (lexset) {
             let x;
             let y;
-            let transform;
+            let transform = "";
             let pos = lexset.position;
             if (pos instanceof Diphthong) {
-                let [rotation, midpoint] = positionDiphText(pos);
+                let [rotation, midpoint] = pos.positionDiphText();
                 // if (!showDiphs) d3.select(this).classed("diph-hidden", true);
                 x = midpoint[0];
                 y = midpoint[1];
-                transform = `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
-            } else if (isAdjustedPosition(pos)) {
+                transform += `rotate(${rotation}, ${midpoint[0]}, ${midpoint[1]})`;
+            } else if (isVowel(pos)) {
                 if (lexset.name === 'NEAR') {
                     // console.log('readjusting');
                 }
                 x = pos.x;
                 y = pos.y;
-                transform = `translate(${pos.dx + 5}, ${pos.dy + 10})`;
                 d3.select(this).classed("diph-hidden", false);
             } else {
                 console.log("neither diph nor pos here", lexset.name, lexset);
                 return;
             }
+            transform += `translate(${lexset.adjustment.dx + 5}, ${lexset.adjustment.dy + 10})`;
             d3.select(this).transition().duration(transition * 3 / 2)
-                .style("opacity", showLex && (isAdjustedPosition(lexset.position) || showDiphs) ? 1 : 0)
+                .style("opacity", showLex && (isVowel(lexset.position) || showDiphs) ? 1 : 0)
                 .attr("x", x)
                 .attr("y", y)
                 .attr('transform', transform)
