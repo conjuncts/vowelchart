@@ -184,12 +184,6 @@ function toggleRP(enable?: boolean) {
         enable = (document.getElementById('toggle-rp') as HTMLInputElement).checked;
     }
     
-    // for(let lexset of lexsetData.values()) {
-    //     if (enable) 
-    //         lexset.position = lexset.RP;
-    //     else
-    //         lexset.position = lexset.GA;
-    // }
     applySnapshot(enable ? oldSnapshots.RP! : oldSnapshots.GA!);
     updateLexsets(lexsetData, isLexsetMode(), isDiphsChecked());
 }
@@ -228,7 +222,6 @@ function toggleTrapezoid(enable?: boolean) {
         for(let vowel of Object.values(vowelData)) {
             vowel.x = xAxis(vowel.F2);
             vowel.y = yAxis(vowel.F1);
-            
         }
         repositionVowels(d3gs, VowelPositionState.FORMANT);
         

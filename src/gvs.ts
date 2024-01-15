@@ -90,7 +90,7 @@ export function moveTo(date: number) {
     updateLexsets(remapped, true, isDiphsChecked());
 }
 
-document.getElementById('gvs-slider')!.addEventListener('change', (e) => {
+document.getElementById('gvs-slider')!.addEventListener('change', (_) => {
     let date = (document.getElementById('gvs-slider') as HTMLInputElement).valueAsNumber;
     if(!(date % 50 === 0)) return;
     moveTo(date);

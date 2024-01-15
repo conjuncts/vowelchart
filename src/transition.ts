@@ -153,7 +153,7 @@ function createNew(newNodes: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, 
 }
 
 function updateExisting(update: d3.Selection<SVGGElement, LexicalSet, d3.BaseType, unknown>,
-    showLex = true, showDiphs = true, transition = 200) {
+    showLex = true, _ = true, transition = 200) {
     // update circles
     update.select("circle.lex-circle")
         .attr("alt", lexset => lexset.displayName)

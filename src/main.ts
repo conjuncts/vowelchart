@@ -128,7 +128,7 @@ d3.tsv("formants.tsv").then(function (data) {
         .attr("r", 8)
         .style("fill", "transparent")
         .style("cursor", d => d.symbol === "ʊ̝" ? "help" : "pointer")
-        .on("click", function (event, d) {
+        .on("click", function (_, d) {
             var audio = new Audio("./vowels/" + d.filename);
             if (enableReferenceVowels) {
                 audio.play();

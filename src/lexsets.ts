@@ -6,20 +6,13 @@ import { fadeInOut, fadeInOutAttr, updateLexsets } from './transition';
 export class LexicalSet {
     name: string;
     displayName: string;
-    // RP?: (Vowel | Diphthong);
-    // GA?: (Vowel | Diphthong);
     position: (Vowel | Diphthong | undefined);
     adjustment: Adjustment = {dx: 0, dy: 0};
     examples: string[];
     constructor() {
         this.name = this.displayName = "";
-        // this.RP = undefined;
-        // this.GA = undefined;
         this.examples = [];
     }
-    // isRhotic(): boolean {
-        // return isRhotic(this.GA!);
-    // }
     checked?: boolean;
     free?: boolean;
     diphthong?: boolean;
@@ -30,8 +23,6 @@ export class LexicalSet {
         let out = new LexicalSet();
         out.name = this.name;
         out.displayName = this.displayName;
-        // out.RP = this.RP;
-        // out.GA = this.GA;
         out.examples = this.examples;
         out.checked = this.checked;
         out.free = this.free;
@@ -103,14 +94,6 @@ export function loadLexicalSets(vowelData: Vowels) {
         let loaded = loadSnapshot(data, vowelData, lexsetData, ['RP', 'GA']);
         snapshots.RP = loaded[0];
         snapshots.GA = loaded[1];
-        // snapshots.RP!.data.forEach((v, lex) => {
-        //     lex.RP = v as Diphthong | Vowel;
-        // });
-        // snapshots.GA!.data.forEach((v, lex) => {
-        //     lex.GA = v as Vowel;
-            
-        //     lex.position = v; //  instanceof Diphthong ? v : (v as AdjustedVowel).vowel;
-        // });
         
         console.log('lexical sets:', lexsetData);
         applySnapshot(loaded[1]); // apply GA
